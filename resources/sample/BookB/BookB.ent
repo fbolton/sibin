@@ -1,0 +1,55 @@
+<!-- Standard entities -->
+<!ENTITY mdash "&#x2014;">
+<!ENTITY ndash "&#x2013;">
+<!ENTITY copy "&#x00A9;">
+<!ENTITY reg "&#x00AE;">
+<!ENTITY trade "&#x2122;">
+
+<!-- Apache projects used by FuseSource products -->
+<!ENTITY cxf "Apache CXF">
+<!ENTITY servicemix "Apache ServiceMix">
+<!ENTITY amq "Apache ActiveMQ">
+<!ENTITY camel "Apache Camel">
+<!ENTITY felix "Apache Felix">
+<!ENTITY karaf "Apache Karaf">
+
+<!ENTITY router "Fuse Mediation Router">
+<!ENTITY fusemr "Fuse Mediation Router">
+<!ENTITY routertm "Fuse Mediation Router&tm;">
+<!ENTITY prodnameshort "Fuse Mediation Router">
+<!ENTITY prodnameshorttm "Mediation Router">
+<!ENTITY version "2.10.0">
+<!ENTITY fullversion "2.10.0-fuse-00-05">
+<!ENTITY camelFullVersion "2.10.0-fuse-00-05">
+<!ENTITY activemqFullVersion "5.5.1-fuse-00-05">
+<!ENTITY cxfFullVersion "2.4.2-fuse-00-05">
+<!ENTITY smxFullVersion "4.4.1-fuse-00-08">
+<!ENTITY springFullVersion "3.0.5.RELEASE">
+<!ENTITY archetypesFullVersion "2011.02.1-fuse-00-05">
+<!ENTITY reldate "September 2011">
+<!ENTITY fuseesbinstprefix "fuse-esb">
+<!ENTITY fusesfinstprefix "fuse-services-framework">
+<!ENTITY fusemrinstprefix "apache-camel">
+<!ENTITY fusembinstprefix "fuse-message-broker">
+<!ENTITY fmc "Fuse Management Console">
+<!ENTITY esb "Fuse ESB">
+<!ENTITY framework "Fuse Service Framework">
+<!ENTITY broker "Fuse Message Broker">
+<!ENTITY tagline "Integration Everywhere">
+<!ENTITY baseuri "http://fusesource.com/docs/router/2.10">
+<!ENTITY apachecameluri "http://fusesource.com/docs/mirrors/camel">
+<!ENTITY sparksBaseUri "http://fusesource.com/unknown">
+<!ENTITY libdir "router">
+<!ENTITY versiondir "2.10">
+<!ENTITY mirrordir "mirrors">
+<!ENTITY apachedir "camel">
+<!ENTITY camelCxfDemoVersion "1.0.1">
+
+<!-- Red Hat entities -->
+<!ENTITY PRODUCT "Documentation">
+<!ENTITY BOOKID "testbook">
+<!ENTITY YEAR "2012">
+<!ENTITY HOLDER "| You need to change the HOLDER entity in the en-US/testbook.ent file |">
+<!ENTITY BZURL "https://bugzilla.redhat.com/index.cgi">
+<!ENTITY BZCOMPONENT "JBoss">
+<!ENTITY BZPRODUCT "JBoss">

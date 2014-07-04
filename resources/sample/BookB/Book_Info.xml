@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE info [
+<!ENTITY % BOOK_ENTITIES SYSTEM "BookB.ent">
+%BOOK_ENTITIES;
+]>
+<info  xmlns="http://docbook.org/ns/docbook"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
+  xmlns:xl="http://www.w3.org/1999/xlink"
+  version="5.0" >
+    <!-- DocBook does not allow a title element here! -->
+    <title>BookB for Testing the Library Type</title>
+    <subtitle>This is the subtitle for BookB</subtitle>
+    <productname>Publican Test</productname>
+    <productnumber>0.1</productnumber>
+    <edition>0</edition>
+    <!-- 'pubsnumber' no longer supportedin db5 (deprecated since db4.2) -->
+    <!-- try 'biblioid' instead -->
+    <!-- pubsnumber>0</pubsnumber -->
+    <biblioid class="pubsnumber">0</biblioid>
+    <abstract>
+        <para>
+            The BookB abstract. A short overview and summary of the book's subject and purpose, traditionally no more than one paragraph long. Note: the abstract will appear in the front matter of your book and will also be placed in the description field of the book's RPM spec file.
+        </para>
+    </abstract>
+    <orgname>
+        <inlinemediaobject>
+            <imageobject>
+                <imagedata fileref="images/title_logo.svg" format="SVG" />
+            </imageobject>
+        </inlinemediaobject>
+    </orgname>
+    <xi:include href="../fallback_content/Legal_Notice.xml" xmlns:xi="http://www.w3.org/2001/XInclude" >
+        <xi:fallback>
+            <xi:include href="../Common_Content/Legal_Notice.xml"/>
+        </xi:fallback>
+    </xi:include>
+    <xi:include href="Author_Group.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+</info>
+

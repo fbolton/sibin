@@ -1,0 +1,90 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE chapter [
+<!ENTITY % BOOK_ENTITIES SYSTEM "BookA.ent">
+%BOOK_ENTITIES;
+]>
+<chapter xmlns="http://docbook.org/ns/docbook"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
+  xmlns:xl="http://www.w3.org/1999/xlink"
+  version="5.0"
+  xml:id="BookA-Chapter">
+  <title>This is a Chapter</title>
+  <info>
+    <abstract>
+      <para>This is a chapter that tests some features of DocBook in the context of a Library build. Specifically, use is made of olinks.</para>
+    </abstract>
+    <keywordset>
+      <keyword>publican</keyword>
+    </keywordset>
+  </info>
+  <section xml:id="BookA-Chapter-Section">
+    <title>This is a Section</title>
+    <simplesect xml:id="BookA-Chapter-Section-SimpleSect">
+    <title>This is a simplesect</title>
+    <para></para>
+    </simplesect>
+    <simplesect>
+      <title>Here is a figure</title>
+      <para/>
+      <figure xml:id="BookA-Chapter-Section-FigSFBA">
+        <title>Sample Figure in Book A</title>
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/icon.svg"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+    </simplesect>
+    <simplesect>
+      <title>Here is a code example</title>
+      <para/>
+      <example xml:id="BookA-Chapter-Section-ExSEBA">
+        <title>Sample Example in Book A</title>
+        <programlisting>// Java
+package com.redhat.testing.testing;
+...</programlisting>
+      </example>
+    </simplesect>
+    <simplesect>
+      <title>Sample olinks</title>
+      <para>Let's make some olinks to Book B:</para>
+      <itemizedlist>
+        <listitem>
+          <para><olink targetdoc="BookB" targetptr="BookB"/></para>
+        </listitem>
+        <listitem>
+          <para><olink targetdoc="BookB" targetptr="BookB-Chapter"/></para>
+        </listitem>
+        <listitem>
+          <para><olink targetdoc="BookB" targetptr="BookB-Chapter-Section"/></para>
+        </listitem>
+        <listitem>
+          <para><olink targetdoc="BookB" targetptr="BookB-Chapter-Section-SimpleSect"/></para>
+        </listitem>
+        <listitem>
+          <para><olink targetdoc="BookB" targetptr="BookB-Chapter-Section-FigSFBA"/></para>
+        </listitem>
+        <listitem>
+          <para><olink targetdoc="BookB" targetptr="BookB-Chapter-Section-ExSEBA"/></para>
+        </listitem>
+      </itemizedlist>
+      <para>And for completeness, a few intra-book olinks:</para>
+      <itemizedlist>
+        <listitem>
+          <para><olink targetptr="BookA-Chapter-Section"/></para>
+        </listitem>
+        <listitem>
+          <para><olink targetptr="BookA-Chapter-Section-FigSFBA"/></para>
+        </listitem>
+        <listitem>
+          <para><olink targetptr="BookA-Chapter-Section-ExSEBA"/></para>
+        </listitem>
+      </itemizedlist>
+    </simplesect>
+  </section>
+  <section>
+    <title>Section as a Topic</title>
+    <para>This is a section that contains paragraphs and other content directly, so that it can be a
+      topic by itself.</para>
+  </section>
+</chapter>

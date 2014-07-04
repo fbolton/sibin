@@ -1,0 +1,5 @@
+#!/bin/bash
+SCRIPTDIR=$(dirname $0)
+export PYTHONPATH=$SCRIPTDIR/../src
+
+python $PYTHONPATH/sibin/commands.py "$@"

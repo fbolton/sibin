@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE appendix [
+<!ENTITY % BOOK_ENTITIES SYSTEM "BookB.ent">
+%BOOK_ENTITIES;
+]>
+<appendix  xmlns="http://docbook.org/ns/docbook"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
+  xmlns:xl="http://www.w3.org/1999/xlink"
+  version="5.0"
+  xml:id="BookB-RevHistory">
+	<title>Revision History</title>
+	<para>
+		<revhistory>
+			<revision>
+				<revnumber>0.0-0</revnumber>
+				<date>Mon Sep 17 2012</date>
+				<author>
+					<personname>
+						<firstname>Enter your first name here.</firstname>
+						<surname>Enter your surname here.</surname>
+					</personname>
+					<email>Enter your email address here.</email>
+				</author>
+				<revdescription>
+					<simplelist>
+						<member>Initial creation by publican</member>
+					</simplelist>
+				</revdescription>
+			</revision>
+		</revhistory>
+	</para>
+</appendix>
+
