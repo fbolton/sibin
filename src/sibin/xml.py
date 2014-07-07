@@ -23,50 +23,31 @@ class XMLTransformer:
   def dcbk2publican(self,element,xmlfile):
     result = copy.deepcopy(element)
     self._dcbk2publican_element( result, xmlfile, with_tail=False )
-    # Cleans away all remaining traces of the DocBook namespace
-    objectify.deannotate(result, cleanup_namespaces=True)
     return result
-  
+
   def _dcbk2publican_element(self,el,xmlfile,with_tail=True):
-    # Strip DocBook 5 namespace out of tag name (if any)
+    # Remove namespace from tag
     i = el.tag.find('}')
     if i >= 0:
-      el.tag = el.tag[i+1:]
-    # Process attributes
-    for attName in el.keys():
-      val = el.get(attName)
-      if attName == '{http://www.w3.org/XML/1998/namespace}id':
-        el.set('id', val)
-        del( el.attrib[attName] )
-      if attName.endswith('pgwide') or attName.endswith('version'):
-        # pgwide and version attributes are only available in DB5, not DB4.5
-        del( el.attrib[attName] )        
+      tagname = el.tag[i+1:]
     # Process text
     el.text = self._dcbk2publican_text(el.text)
     if with_tail:
       el.tail = self._dcbk2publican_text(el.tail)
     # Process specific tags
-    if el.tag == 'olink':
+    if tagname == 'olink':
       self._dcbk2publican_olink(el)
       return
-    elif el.tag == 'xref':
+    elif tagname == 'xref':
       self._dcbk2publican_xref(el)
       return
-    elif el.tag == 'link':
+    elif tagname == 'link':
       self._dcbk2publican_link(el)
       return
-    elif el.tag == 'imagedata':
-      fileref = el.get('fileref')
-      if fileref:
-        (root, ext) = os.path.splitext(fileref)
-        imageFile = os.path.normpath(os.path.join(os.path.dirname(xmlfile),fileref))
-        (imageId, localeId) = self.context.linkData.getimageid(imageFile)
-        if imageId:
-          el.set('fileref', 'images/' + imageId + ext)
-    elif el.tag in self.SECTION_TAGS:
-      el.tag = 'section'
-    elif el.tag.endswith('info'):
-      el.tag = 'sectioninfo'
+    elif tagname == 'imagedata':
+      fileref = el.get('fileref') or el.get('{http://docbook.org/ns/docbook}fileref')
+      if fileref and (not fileref.startswith('http:')):
+        el.set('fileref', 'images/' + os.path.basename(fileref))
     # Iterate over all child nodes
     for child in el:
       if isinstance(child, etree._Comment):
@@ -113,15 +94,10 @@ class XMLTransformer:
       phrase.text = self.context.linkData.getolinktext(targetdoc,targetptr)
       phrase.tail = el.tail
       parent.replace(el,phrase)
-    elif targetptr:
-      # Link within a book
-      self.transform_intra_link(el, targetptr)
-    else:
-      # TODO log a warning
-      # Should not happen!
-      pass
     
   def _dcbk2publican_xref(self,el):
+    # No-op!
+    return
     linkend = el.get('linkend')
     if linkend:
       # Link within a book
@@ -132,6 +108,8 @@ class XMLTransformer:
       pass
 
   def _dcbk2publican_link(self,el):
+    # No-op!
+    return
     # Map 'link' to 'ulink', which is the required way to define HREFs in DocBook 4
     parent = el.getparent()
     href = el.get('{http://www.w3.org/1999/xlink}href')

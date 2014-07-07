@@ -76,18 +76,13 @@ class BasicTasks:
       imageFileSet.add(imageFile)
     return imageFileSet
   
-  def normalize_fileref_attributes(self,element):
-    for imagedata in element.xpath(".//*[local-name()='imagedata']"):
-      fileref = imagedata.get('fileref') or imagedata.get('{http://docbook.org/ns/docbook}fileref')
-      if fileref.startswith('http:'):
-        # No need to process the image, if it's just a URL reference
-        continue
-      if not fileref:
-        raise Exception('appendImageLinkData() - non-existent imagedata/@fileref attribute')
-      shortFileName = os.path.basename(fileref)
-      imagedata.set('fileref', 'images/' + shortFileName)
-
   def generate_publican(self,args):
+    # Populate topic link data
+    for bookFile in self.context.bookFiles:
+      bookParser = sibin.core.BookParser(sibin.core.Book(bookFile))
+      bookParser.parse()
+      bookParser.appendLinkData(self.context.linkData)
+      del bookParser
     # Start generating publican output
     genbasedir = 'publican'
     for bookFile in self.context.bookFiles:
@@ -125,11 +120,12 @@ class BasicTasks:
       for imageFile in imageFileSet:
         genimagefile = os.path.join(genimagesdir, os.path.basename(imageFile) )
         shutil.copyfile(imageFile, genimagefile)
-      # Modify the imagedata/@fileref attributes in the main publican book file
-      self.normalize_fileref_attributes(bookParser.root)
+        # ToDo: Really ought to disambiguate file names in case
+        # where two base file names are identical
+      transformedBook = self.context.transformer.dcbk2publican(bookParser.root, bookFile)
       # Generate the main publican book file
       genbookfile = os.path.join(genlangdir, bookRoot + '.xml')
-      self.save_doc_to_xml_file(bookParser.root, genbookfile, bookRoot + '.ent')
+      self.save_doc_to_xml_file(transformedBook, genbookfile, bookRoot + '.ent')
       # Copy the entities file
       genentitiesfile = os.path.join(genlangdir, bookRoot + '.ent')
       shutil.copyfile(self.context.bookEntitiesFile, genentitiesfile)
