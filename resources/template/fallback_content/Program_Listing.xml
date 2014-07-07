@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE programlisting [
+]>
+<programlisting version="5.0"
+  language="java"
+  xml:lang="en-US"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
+  xmlns:xl="http://www.w3.org/1999/xlink"
+  xmlns="http://docbook.org/ns/docbook"><!--  Converted by db4-upgrade version 1.0  -->package org.jboss.book.jca.ex1;
+
+import javax.naming.InitialContext;
+
+public class ExClient
+{
+   public static void main(String args[]) 
+       throws Exception
+   {
+      InitialContext iniCtx = new InitialContext();
+      Object         ref    = iniCtx.lookup("EchoBean");
+      EchoHome       home   = (EchoHome) ref;
+      Echo           echo   = home.create();
+
+      System.out.println("Created Echo");
+
+      System.out.println("Echo.echo('Hello') = " + echo.echo("Hello"));
+   }
+}</programlisting>
+

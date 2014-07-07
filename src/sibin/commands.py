@@ -10,6 +10,7 @@ import sibin.xml
 import os
 import sys
 import argparse
+import shutil
 
 class BasicTasks:
   def __init__(self,context):
@@ -34,21 +35,107 @@ class BasicTasks:
     f.close()
     del content
 
+  def parse_xincludes(self, xmlfile, ignoreDirs=[]):
+    '''
+    Return the set of all files recursively xincluded by xmlfile,
+    optionally excluding the contents of any directories specified by ignoreDirs
+    '''
+    xincludeSet = set()
+    doc = etree.parse(xmlfile)
+    root = doc.getroot()
+    for xinclude in root.findall('.//{http://www.w3.org/2001/XInclude}include'):
+      # Ignore fallback includes (implies that main include must be provided)
+      if xinclude.getparent().tag == '{http://www.w3.org/2001/XInclude}fallback':
+        break
+      href = xinclude.get('href') or xinclude.get('{http://www.w3.org/2001/XInclude}href')
+      xincludeFile = os.path.normpath(os.path.join(os.path.dirname(xmlfile),href))
+      if not os.path.exists(xincludeFile):
+        raise Exception('File referenced in xi:include does not exist:  ' + xincludeFile)
+      ignore = False
+      for ignoredir in ignoreDirs:
+        if xincludeFile.startswith(ignoredir):
+          ignore = True
+          break
+      if not ignore:
+        xincludeSet.add(xincludeFile)
+        xincludeSet |= self.parse_xincludes(xincludeFile, ignoreDirs)
+    # Garbage collect parsed file, to avoid memory leaks!
+    del doc
+    return xincludeSet
+
+  def getImageFileSet(self,element,xmlfile):
+    imageFileSet = set()
+    for imagedata in element.xpath(".//*[local-name()='imagedata']"):
+      fileref = imagedata.get('fileref') or imagedata.get('{http://docbook.org/ns/docbook}fileref')
+      if fileref.startswith('http:'):
+        # No need to process the image, if it's just a URL reference
+        continue
+      if not fileref:
+        raise Exception('appendImageLinkData() - non-existent imagedata/@fileref attribute in file:' + xmlfile)
+      imageFile = os.path.normpath(os.path.join(os.path.dirname(xmlfile),fileref))
+      imageFileSet.add(imageFile)
+    return imageFileSet
+  
+  def normalize_fileref_attributes(self,element):
+    for imagedata in element.xpath(".//*[local-name()='imagedata']"):
+      fileref = imagedata.get('fileref') or imagedata.get('{http://docbook.org/ns/docbook}fileref')
+      if fileref.startswith('http:'):
+        # No need to process the image, if it's just a URL reference
+        continue
+      if not fileref:
+        raise Exception('appendImageLinkData() - non-existent imagedata/@fileref attribute')
+      shortFileName = os.path.basename(fileref)
+      imagedata.set('fileref', 'images/' + shortFileName)
+
   def generate_publican(self,args):
+    # Start generating publican output
     genbasedir = 'publican'
     for bookFile in self.context.bookFiles:
       bookParser = sibin.core.BookParser(sibin.core.Book(bookFile))
       bookParser.parse()
       # cspec = self.initialize_cspec(bookParser.book)
-      # Determine name of generated book file
+      # Make the directories for this publican book
       (bookRoot, ext) = os.path.splitext(os.path.basename(bookFile))
       genbookdir = os.path.join(genbasedir, bookRoot)
       genlangdir = os.path.join(genbookdir, 'en-US')
       if not os.path.exists(genlangdir):
         os.makedirs(genlangdir)
-      genbookfile = os.path.join(genlangdir, bookRoot + '.xml')
+      # Need to compile a list of all the image files referenced by
+      # each book and copy all of those images files into the en-US/images sub-directory.
+      # Also need to check each fileref attribute, to make sure it has the form
+      # fileref="images/<imagefile>.<ext>" , modifying it if necessary.
+      # 
+      # Generate the set of recursively xincluded files, including the book file
+      xincludeFileSet = set()
+      xincludeFileSet.add(bookFile)
+      xincludeFileSet |= self.parse_xincludes(bookFile)
+      # print 'xincludeFileSet = ' + str(xincludeFileSet)
+      # Get the set of image files for this book
+      imageFileSet = set()
+      for xmlfile in xincludeFileSet:
+        parserForEntities = etree.XMLParser(resolve_entities=False)
+        doc = etree.parse(xmlfile,parserForEntities)
+        root = doc.getroot()
+        imageFileSet |= self.getImageFileSet(root,xmlfile)
+      # print 'imageFileSet for book [' + bookFile + '] is: ' + str(imageFileSet)
+      # Copy image files to en-US/images sub-directory
+      genimagesdir = os.path.join(genlangdir, 'images')
+      if not os.path.exists(genimagesdir):
+        os.makedirs(genimagesdir)
+      for imageFile in imageFileSet:
+        genimagefile = os.path.join(genimagesdir, os.path.basename(imageFile) )
+        shutil.copyfile(imageFile, genimagefile)
+      # Modify the imagedata/@fileref attributes in the main publican book file
+      self.normalize_fileref_attributes(bookParser.root)
       # Generate the main publican book file
+      genbookfile = os.path.join(genlangdir, bookRoot + '.xml')
       self.save_doc_to_xml_file(bookParser.root, genbookfile, bookRoot + '.ent')
+      # Copy the entities file
+      genentitiesfile = os.path.join(genlangdir, bookRoot + '.ent')
+      shutil.copyfile(self.context.bookEntitiesFile, genentitiesfile)
+        
+      
+
 
 
 # MAIN CODE - PROGRAM STARTS HERE!
