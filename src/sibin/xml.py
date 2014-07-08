@@ -86,14 +86,12 @@ class XMLTransformer:
     targetptr = el.get('targetptr')
     if targetdoc and targetptr:
       # Link between books
-      # Maps to a 'phrase' element in CCMS
-      # Use 'remap' attribute to encode 'olink' data
-      # e.g. remap="olink:targetdoc/targetptr"
-      phrase = el.makeelement('phrase')
-      phrase.set('remap', 'olink:' + targetdoc + '/' + targetptr)
-      phrase.text = self.context.linkData.getolinktext(targetdoc,targetptr)
-      phrase.tail = el.tail
-      parent.replace(el,phrase)
+      # Maps to a 'link' element
+      link = el.makeelement('link')
+      link.set('{http://www.w3.org/1999/xlink}href', self.context.linkData.olink2url(targetdoc,targetptr))
+      link.text = self.context.linkData.getolinktext(targetdoc,targetptr)
+      link.tail = el.tail
+      parent.replace(el,link)
     
   def _dcbk2publican_xref(self,el):
     # No-op!

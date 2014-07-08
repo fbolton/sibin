@@ -49,6 +49,12 @@ class SibinContext:
     self.profiles = []
     # Profiles can specify the conditions to build with
     self.conditions = {}
+    # Profiles can specify the portal hostname
+    self.hostnames = {}
+    # Product name
+    self.productname = ''
+    # Product version
+    self.productversion = ''
     # Selects the current effective profile
     self.currentProfile = 'default'
     # XML transformer instance
@@ -56,7 +62,7 @@ class SibinContext:
     # Optional commit comment
     self.comment = ''
     # Contains the data for cross-referencing images and topics across the whole library
-    self.linkData = LinkData()
+    self.linkData = LinkData(self)
     # The relative path name of the book entities file
     self.bookEntitiesFile = 'Library.ent'
     # File extensions used to identify image files
@@ -66,6 +72,10 @@ class SibinContext:
   def initializeFromFile(self,filename):
     doc = etree.parse(filename)
     root = doc.getroot()
+    product = root.find('product')
+    if product is not None:
+      self.productname    = product.get('name')
+      self.productversion = product.get('version')
     for book in root.xpath('/context/books/book'):
       self.bookFiles.append(book.get('file'))
     for entities in root.xpath('/context/entities'):
@@ -89,10 +99,9 @@ class SibinContext:
     # TODO Should change this into a log statement
     print 'Current profile set to: ' + self.currentProfile
   
-  def getproject(self):
-    # TODO Provide proper implementation
-    return self.currentProfile
-  
+  def gethostname(self):
+    return self.hostnames[self.currentProfile]
+
 
 class Book:
   def __init__(self,filename=''):
@@ -164,7 +173,10 @@ class BookParser:
 
 
 class LinkData:
-  def __init__(self):
+  def __init__(self,context):
+    if not isinstance(context,SibinContext):
+      raise Exception('LinkData must be initialized with a SibinContext argument')
+    self.context = context
     self.XmlId2Target = {}
     return
   
@@ -186,7 +198,7 @@ class LinkData:
         print 'WARNING: <olink targetdoc="' + targetdoc + '" targetptr="' + targetptr + '/>',
         print 'references a non-existent book ID: ' + targetdoc
         print '    The book ID might be obsolete or you might have forgotten to add all of the',
-        print 'relevant books to your .git-cms file.'
+        print 'relevant books to your sibin.cfg file.'
       topicTuple = bookId2Tuple[targetdoc]
       if topicTuple:
         bookTitle = topicTuple[0].title
@@ -196,7 +208,25 @@ class LinkData:
         else:
           return 'section "' + sectionTitle + '" in "' + bookTitle + '"'
     return ''
-    
+
+  def olink2url(self,targetdoc,targetptr):
+    if not self.XmlId2Target.has_key(targetptr):
+      return ''
+    bookId2Tuple = self.XmlId2Target[targetptr]
+    if bookId2Tuple:
+      if targetdoc not in bookId2Tuple:
+        print 'WARNING: <olink targetdoc="' + targetdoc + '" targetptr="' + targetptr + '/>',
+        print 'references a non-existent book ID: ' + targetdoc
+        print '    The book ID might be obsolete or you might have forgotten to add all of the',
+        print 'relevant books to your sibin.cfg file.'
+      topicTuple = bookId2Tuple[targetdoc]
+      if topicTuple:
+        baseUrl = self.context.gethostname()
+        bookTitle = topicTuple[0].title.replace(' ','_')
+        prodName  = self.context.productname.replace(' ','_')
+        version   = self.context.productversion
+        return baseUrl + '/en-US/' + prodName + '/' + version + '/html/' + bookTitle + '/index.html'
+    return ''
   
   def __str__(self):
     print 'XmlId2Target = {'
