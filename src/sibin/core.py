@@ -51,6 +51,8 @@ class SibinContext:
     self.conditions = {}
     # Profiles can specify the portal hostname
     self.hostnames = {}
+    # Profiles can specify the template directory
+    self.templates = {}
     # Product name
     self.productname = ''
     # Product version
@@ -91,6 +93,9 @@ class SibinContext:
       host = profile.find('host')
       if host is not None:
         self.hostnames[profilename] = host.get('name')
+      template = profile.find('template')
+      if template is not None:
+        self.templates[profilename] = template.get('dir')
     del doc
     if 'default' in self.profiles:
       self.currentProfile = 'default'
@@ -101,6 +106,9 @@ class SibinContext:
   
   def gethostname(self):
     return self.hostnames[self.currentProfile]
+
+  def gettemplate(self):
+    return self.templates[self.currentProfile]
 
 
 class Book:

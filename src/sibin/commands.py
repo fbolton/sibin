@@ -129,7 +129,13 @@ class BasicTasks:
       # Copy the entities file
       genentitiesfile = os.path.join(genlangdir, bookRoot + '.ent')
       shutil.copyfile(self.context.bookEntitiesFile, genentitiesfile)
-        
+      # Copy the template files
+      templatedir = self.context.gettemplate()
+      shutil.copyfile(os.path.join(templatedir,'publican.cfg'), os.path.join(genbookdir, 'publican.cfg'))
+      shutil.copyfile(os.path.join(templatedir,'Author_Group.xml'), os.path.join(genlangdir, 'Author_Group.xml'))
+      shutil.copyfile(os.path.join(templatedir,'Book_Info.xml'), os.path.join(genlangdir, 'Book_Info.xml'))
+      shutil.copyfile(os.path.join(templatedir,'Preface.xml'), os.path.join(genlangdir, 'Preface.xml'))
+      shutil.copyfile(os.path.join(templatedir,'Revision_History.xml'), os.path.join(genlangdir, 'Revision_History.xml'))
       
 
 
