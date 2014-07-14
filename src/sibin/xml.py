@@ -92,6 +92,14 @@ class XMLTransformer:
       link.text = self.context.linkData.getolinktext(targetdoc,targetptr)
       link.tail = el.tail
       parent.replace(el,link)
+    elif targetptr:
+      # Link within a book
+      # Maps to an 'xref' element
+      xref = el.makeelement('xref')
+      xref.set('linkend', targetptr)
+      xref.text = el.text
+      xref.tail = el.tail
+      parent.replace(el,xref)
     
   def _dcbk2publican_xref(self,el):
     # No-op!
