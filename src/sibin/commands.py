@@ -76,6 +76,34 @@ class BasicTasks:
       imageFileSet.add(imageFile)
     return imageFileSet
   
+  def modify_book_info_file(self,xmlfile,bookparser,bookfileroot):
+    doc = etree.parse(xmlfile)
+    root = doc.getroot()
+    ns = { 'db' : 'http://docbook.org/ns/docbook'}
+    for title in root.xpath('/db:info/db:title', namespaces = ns):
+      title.text = bookparser.book.title
+    for subtitle in root.xpath('/db:info/db:subtitle', namespaces = ns):
+      subtitle.text = bookparser.book.subtitle
+    for productname in root.xpath('/db:info/db:productname', namespaces = ns):
+      productname.text = self.context.productname
+    for productnumber in root.xpath('/db:info/db:productnumber', namespaces = ns):
+      productnumber.text = bookparser.book.productnumber
+    for abstract in root.xpath('/db:info/db:abstract/db:para', namespaces = ns):
+      abstract.text = bookparser.book.abstract
+    self.save_doc_to_xml_file(root, xmlfile, bookfileroot + '.ent')
+    
+  def modify_revhistory_file(self,xmlfile,bookparser,bookfileroot):
+    doc = etree.parse(xmlfile)
+    root = doc.getroot()
+    root.set('{http://www.w3.org/XML/1998/namespace}id', bookfileroot + '-RevHistory')
+    ns = { 'db' : 'http://docbook.org/ns/docbook'}
+    for revision in root.xpath('/db:appendix/db:para/db:revhistory/db:revision', namespaces = ns):
+      revnumber = revision.find('{http://docbook.org/ns/docbook}revnumber')
+      revnumber.text = self.context.productversion + '-' + self.context.buildversion
+      # Modify just the first revision element
+      break
+    self.save_doc_to_xml_file(root, xmlfile, bookfileroot + '.ent')
+    
   def generate_publican(self,args):
     # Populate topic link data
     for bookFile in self.context.bookFiles:
@@ -136,10 +164,16 @@ class BasicTasks:
       with open(genpublicancfg, 'a') as filehandle:
         filehandle.write('docname: ' + bookRoot + '\n')
       # Copy the template files
-      shutil.copyfile(os.path.join(templatedir,'Author_Group.xml'), os.path.join(genlangdir, 'Author_Group.xml'))
-      shutil.copyfile(os.path.join(templatedir,'Book_Info.xml'), os.path.join(genlangdir, 'Book_Info.xml'))
-      shutil.copyfile(os.path.join(templatedir,'Preface.xml'), os.path.join(genlangdir, 'Preface.xml'))
-      shutil.copyfile(os.path.join(templatedir,'Revision_History.xml'), os.path.join(genlangdir, 'Revision_History.xml'))
+      # shutil.copyfile(os.path.join(templatedir,'Author_Group.xml'), os.path.join(genlangdir, 'Author_Group.xml'))
+      # shutil.copyfile(os.path.join(templatedir,'Preface.xml'), os.path.join(genlangdir, 'Preface.xml'))
+      # Copy revision history file
+      genrevhistory = os.path.join(genlangdir, 'Revision_History.xml')
+      shutil.copyfile(os.path.join(templatedir,'Revision_History.xml'), genrevhistory)
+      self.modify_revhistory_file(genrevhistory, bookParser, bookRoot)
+      # Copy book info file
+      genbookinfo = os.path.join(genlangdir, 'Book_Info.xml')
+      shutil.copyfile(os.path.join(templatedir,'Book_Info.xml'), genbookinfo)
+      self.modify_book_info_file(genbookinfo, bookParser, bookRoot)
       
 
 

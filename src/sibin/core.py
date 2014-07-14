@@ -57,6 +57,8 @@ class SibinContext:
     self.productname = ''
     # Product version
     self.productversion = ''
+    # Build version
+    self.buildversion = ''
     # Selects the current effective profile
     self.currentProfile = 'default'
     # XML transformer instance
@@ -78,6 +80,7 @@ class SibinContext:
     if product is not None:
       self.productname    = product.get('name')
       self.productversion = product.get('version')
+      self.buildversion   = product.get('build')
     for book in root.xpath('/context/books/book'):
       self.bookFiles.append(book.get('file'))
     for entities in root.xpath('/context/entities'):
