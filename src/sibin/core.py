@@ -92,7 +92,7 @@ class SibinContext:
       for conditions in profile.iter('conditions'):
         for condition in conditions.iter('condition'):
           conditionlist.append(condition.get('match'))
-      self.conditions[profilename] = '|'.join(conditionlist)
+      self.conditions[profilename] = ';'.join(conditionlist)
       host = profile.find('host')
       if host is not None:
         self.hostnames[profilename] = host.get('name')
@@ -112,6 +112,9 @@ class SibinContext:
 
   def gettemplate(self):
     return self.templates[self.currentProfile]
+
+  def getconditions(self):
+    return self.conditions[self.currentProfile]
 
 
 class Book:
