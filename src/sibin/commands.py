@@ -87,7 +87,7 @@ class BasicTasks:
     for productname in root.xpath('/db:info/db:productname', namespaces = ns):
       productname.text = self.context.productname
     for productnumber in root.xpath('/db:info/db:productnumber', namespaces = ns):
-      productnumber.text = bookparser.book.productnumber
+      productnumber.text = self.context.productversion
     for abstract in root.xpath('/db:info/db:abstract/db:para', namespaces = ns):
       abstract.text = bookparser.book.abstract
     self.save_doc_to_xml_file(root, xmlfile, bookfileroot + '.ent')
