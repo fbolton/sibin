@@ -100,6 +100,13 @@ class XMLTransformer:
       xref.text = el.text
       xref.tail = el.tail
       parent.replace(el,xref)
+    else:
+      # Badly defined 'olink' element
+      # Map to a 'phrase' element
+      phrase = el.makeelement('phrase')
+      phrase.text = el.text
+      phrase.tail = el.tail
+      parent.replace(el,phrase)
     
   def _dcbk2publican_xref(self,el):
     # No-op!
