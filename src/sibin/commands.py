@@ -11,6 +11,7 @@ import os
 import sys
 import argparse
 import shutil
+import subprocess
 
 class BasicTasks:
   def __init__(self,context):
@@ -34,6 +35,22 @@ class BasicTasks:
     f.write(content)
     f.close()
     del content
+    
+  def restore_file_read(self):
+    bookSet = set()
+    filename = 'sibin.restore'
+    if os.path.exists(filename):
+      with open(filename, 'r') as f:
+        bookSet.add(f.readline().strip() )
+    return bookSet
+  
+  def restore_file_append(self, line):
+    filename = 'sibin.restore'
+    with open(filename, 'a') as f:
+      f.write(line + '\n')
+  
+  def restore_file_delete(self):
+    os.unlink('sibin.restore')
 
   def parse_xincludes(self, xmlfile, ignoreDirs=[]):
     '''
@@ -105,6 +122,9 @@ class BasicTasks:
     self.save_doc_to_xml_file(root, xmlfile, bookfileroot + '.ent')
     
   def generate_publican(self,args):
+    self._generate_publican()
+    
+  def _generate_publican(self):
     # Populate topic link data
     for bookFile in self.context.bookFiles:
       bookParser = sibin.core.BookParser(sibin.core.Book(bookFile))
@@ -167,8 +187,8 @@ class BasicTasks:
         if conditions:
           filehandle.write('condition: ' + conditions + '\n')
       # Copy the template files
-      # shutil.copyfile(os.path.join(templatedir,'Author_Group.xml'), os.path.join(genlangdir, 'Author_Group.xml'))
-      # shutil.copyfile(os.path.join(templatedir,'Preface.xml'), os.path.join(genlangdir, 'Preface.xml'))
+      shutil.copyfile(os.path.join(templatedir,'Author_Group.xml'), os.path.join(genlangdir, 'Author_Group.xml'))
+      shutil.copyfile(os.path.join(templatedir,'Preface.xml'), os.path.join(genlangdir, 'Preface.xml'))
       # Copy revision history file
       genrevhistory = os.path.join(genlangdir, 'Revision_History.xml')
       shutil.copyfile(os.path.join(templatedir,'Revision_History.xml'), genrevhistory)
@@ -178,7 +198,37 @@ class BasicTasks:
       shutil.copyfile(os.path.join(templatedir,'Book_Info.xml'), genbookinfo)
       self.modify_book_info_file(genbookinfo, bookParser, bookRoot)
       
-
+  def build_publican(self,args):
+    # First phase of build is to generate publican books
+    if not args.nogen:
+      self._generate_publican()
+    # Check whether the previous build was aborted
+    previouslyBuiltBooks = self.restore_file_read()
+    if previouslyBuiltBooks:
+      print 'WARNING: Restoring after aborted build. Will only build the books not built last time around.'
+    # Start building publican books
+    genbasedir = 'publican'
+    formats = ['html', 'html-single']
+    langs = 'en-US'
+    isBuildSuccess = True
+    booksToBuild = set(self.context.bookFiles) - previouslyBuiltBooks
+    for bookFile in booksToBuild:
+      # Get the directory name for this publican book
+      (bookRoot, ext) = os.path.splitext(os.path.basename(bookFile))
+      genbookdir = os.path.join(genbasedir, bookRoot)
+      if not os.path.exists(genbookdir):
+        print 'WARNING: Generated book directory does not exist: ' + genbookdir
+        isBuildSuccess = False
+        continue
+      # Invoke 'publican' to build the book
+      cwd = os.getcwd()
+      os.chdir(genbookdir)
+      subprocess.check_call(['publican','build','--langs',langs,'--formats',','.join(formats)])
+      os.chdir(cwd)
+      self.restore_file_append(bookFile)
+    # Clean up restore file
+    if isBuildSuccess:
+      self.restore_file_delete()
 
 
 # MAIN CODE - PROGRAM STARTS HERE!
@@ -200,6 +250,11 @@ subparsers = parser.add_subparsers()
 # Create the sub-parser for the 'gen' command
 gen_parser = subparsers.add_parser('gen', help='Generate Publican books')
 gen_parser.set_defaults(func=tasks.generate_publican)
+
+# Create the sub-parser for the 'build' command
+build_parser = subparsers.add_parser('build', help='Build Publican books')
+build_parser.add_argument('--nogen', help='Do not generate books, just build', action='store_true')
+build_parser.set_defaults(func=tasks.build_publican)
 
 # Now, parse the args and call the relevant sub-command
 args = parser.parse_args()
