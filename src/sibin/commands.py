@@ -206,9 +206,17 @@ class BasicTasks:
     previouslyBuiltBooks = self.restore_file_read()
     if previouslyBuiltBooks:
       print 'WARNING: Restoring after aborted build. Will only build the books not built last time around.'
+    # Parse --format command-line argument
+    formats = ['html', 'html-single']
+    if args.formats:
+      formatsMinusSpaces = args.formats.replace(' ','')
+      if ',' in formatsMinusSpaces:
+        formats = formatsMinusSpaces.split(',')
+      else:
+        formats = [ formatsMinusSpaces ]
+    print 'Building the following formats: ' + str(formatsMinusSpaces)
     # Start building publican books
     genbasedir = 'publican'
-    formats = ['html', 'html-single']
     langs = 'en-US'
     isBuildSuccess = True
     booksToBuild = set(self.context.bookFiles) - previouslyBuiltBooks
@@ -254,6 +262,7 @@ gen_parser.set_defaults(func=tasks.generate_publican)
 # Create the sub-parser for the 'build' command
 build_parser = subparsers.add_parser('build', help='Build Publican books')
 build_parser.add_argument('--nogen', help='Do not generate books, just build', action='store_true')
+build_parser.add_argument('--formats', help='Specify output formats, as a comma-separated list')
 build_parser.set_defaults(func=tasks.build_publican)
 
 # Now, parse the args and call the relevant sub-command
