@@ -97,7 +97,6 @@ class XMLTransformer:
       # Maps to an 'xref' element
       xref = el.makeelement('xref')
       xref.set('linkend', targetptr)
-      xref.text = el.text
       xref.tail = el.tail
       parent.replace(el,xref)
     else:
