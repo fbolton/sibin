@@ -52,9 +52,6 @@ class XMLTransformer:
       fileref = el.get('fileref') or el.get('{http://docbook.org/ns/docbook}fileref')
       if fileref and (not fileref.startswith('http:')):
         el.set('fileref', 'images/' + os.path.basename(fileref))
-      scale = el.get('scale') or el.get('{http://docbook.org/ns/docbook}scale')
-      if scale:
-        el.set('scale', '100')
     # Iterate over all child nodes
     for child in el:
       if isinstance(child, etree._Comment):
