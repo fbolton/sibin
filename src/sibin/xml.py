@@ -30,6 +30,10 @@ class XMLTransformer:
     i = el.tag.find('}')
     if i >= 0:
       tagname = el.tag[i+1:]
+    # Process attributes
+    xmlBaseName = '{http://www.w3.org/XML/1998/namespace}base'
+    if xmlBaseName in el.attrib:
+      del( el.attrib[xmlBaseName] )
     # Process text
     el.text = self._dcbk2publican_text(el.text)
     if with_tail:
