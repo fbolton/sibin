@@ -20,7 +20,8 @@ class XMLTransformer:
     self.context = context
     self.SECTION_TAGS = ['section', 'simplesect', 'sect1', 'sect2', 'sect3', 'sect4', 'sect5']
 
-  def dcbk2publican(self,element,xmlfile):
+  def dcbk2publican(self,element,xmlfile,bookid):
+    self.bookid = bookid
     result = copy.deepcopy(element)
     self._dcbk2publican_element( result, xmlfile, with_tail=False )
     return result
@@ -88,12 +89,22 @@ class XMLTransformer:
     parent = el.getparent()
     targetdoc = el.get('targetdoc')
     targetptr = el.get('targetptr')
-    if targetdoc and targetptr:
+    if targetdoc and targetptr and (targetdoc != self.bookid):
       # Link between books
       # Maps to a 'link' element
       link = el.makeelement('link')
       link.set('{http://www.w3.org/1999/xlink}href', self.context.linkData.olink2url(targetdoc,targetptr))
-      link.text = self.context.linkData.getolinktext(targetdoc,targetptr)
+      if el.text:
+        link.text = el.text
+      else:
+        link.text = self.context.linkData.getolinktext(targetdoc,targetptr)
+      link.tail = el.tail
+      parent.replace(el,link)
+    elif targetptr and el.text:
+      # If link text => map to a 'link' element
+      link = el.makeelement('link')
+      link.set('linkend', targetptr)
+      link.text = el.text
       link.tail = el.tail
       parent.replace(el,link)
     elif targetptr:

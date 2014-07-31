@@ -170,7 +170,7 @@ class BasicTasks:
         shutil.copyfile(imageFile, genimagefile)
         # ToDo: Really ought to disambiguate file names in case
         # where two base file names are identical
-      transformedBook = self.context.transformer.dcbk2publican(bookParser.root, bookFile)
+      transformedBook = self.context.transformer.dcbk2publican(bookParser.root, bookFile, bookParser.book.id)
       # Generate the main publican book file
       genbookfile = os.path.join(genlangdir, bookRoot + '.xml')
       self.save_doc_to_xml_file(transformedBook, genbookfile, bookRoot + '.ent')
