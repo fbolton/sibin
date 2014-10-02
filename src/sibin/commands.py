@@ -7,11 +7,13 @@ Created on July 3, 2014
 from lxml import etree
 import sibin.core
 import sibin.xml
+import sibin.git
 import os
 import sys
 import argparse
 import shutil
 import subprocess
+import hashlib
 
 class BasicTasks:
   def __init__(self,context):
@@ -58,6 +60,18 @@ class BasicTasks:
       # Non-zero exit code
       print 'WARNING: No Kerberos ticket detected. Please run kinit'
       sys.exit()
+      
+  def get_checksum(self,filename):
+    parserForEntities = etree.XMLParser(resolve_entities=False)
+    doc = etree.parse(filename,parserForEntities)
+    doc.xinclude()
+    stringifiedbook = etree.tostring(doc.getroot())
+    sha = hashlib.sha1()
+    sha.update(stringifiedbook)
+    checksum = sha.hexdigest()
+    del stringifiedbook
+    del doc
+    return checksum
 
   def parse_xincludes(self, xmlfile, ignoreDirs=[]):
     '''
@@ -262,7 +276,20 @@ class BasicTasks:
     self.check_kerberos_ticket()
     # Executes the following command-line command for each publican book:
     # rhpkg publican-build --lang en-US --message "commit message"
-
+    
+  def checksum(self,args):
+    isGitIndexChanged = False
+    for bookFile in self.context.bookFiles:
+      checksum = self.get_checksum(bookFile)
+      print 'Checksum for ' + bookFile
+      print checksum
+      checksumFile = bookFile + '.sha'
+      with open(checksumFile, 'w') as f:
+        f.write(checksum)
+      self.context.git.add(checksumFile)
+      isGitIndexChanged = True
+    if isGitIndexChanged:
+      self.context.git.commit('sibin: saved XML document checksums') 
 
 # MAIN CODE - PROGRAM STARTS HERE!
 # --------------------------------
@@ -274,6 +301,7 @@ if not os.path.exists('sibin.cfg'):
 context = sibin.core.SibinContext()
 context.initializeFromFile('sibin.cfg')
 context.transformer = sibin.xml.XMLTransformer(context)
+context.git = sibin.git.GitUtility('.')
 tasks = BasicTasks(context)
 
 # Create the top-level parser
@@ -294,6 +322,10 @@ build_parser.set_defaults(func=tasks.build_publican)
 publish_parser = subparsers.add_parser('publish', help='Publish Publican books')
 publish_parser.add_argument('--nobuild', help='Do not build books, just publish', action='store_true')
 publish_parser.set_defaults(func=tasks.publish_publican)
+
+# Create the sub-parser for the 'checksum' command
+checksum_parser = subparsers.add_parser('checksum', help='Generate and store a checksum for every book in the library')
+checksum_parser.set_defaults(func=tasks.checksum)
 
 # Now, parse the args and call the relevant sub-command
 args = parser.parse_args()
