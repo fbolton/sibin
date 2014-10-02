@@ -51,6 +51,13 @@ class BasicTasks:
   
   def restore_file_delete(self):
     os.unlink('sibin.restore')
+    
+  def check_kerberos_ticket(self):
+    kresponse = subprocess.call(['klist'])
+    if kresponse != 0:
+      # Non-zero exit code
+      print 'WARNING: No Kerberos ticket detected. Please run kinit'
+      sys.exit()
 
   def parse_xincludes(self, xmlfile, ignoreDirs=[]):
     '''
@@ -202,6 +209,10 @@ class BasicTasks:
     # First phase of build is to generate publican books
     if not args.nogen:
       self._generate_publican()
+    # Second phase, build the books
+    self._build_publican(args)
+
+  def _build_publican(self,args):
     # Check whether the previous build was aborted
     previouslyBuiltBooks = self.restore_file_read()
     if previouslyBuiltBooks:
@@ -238,6 +249,20 @@ class BasicTasks:
     if isBuildSuccess:
       self.restore_file_delete()
 
+  def publish_publican(self,args):
+    if not args.nobuild:
+      # First phase, generate publican books
+      self._generate_publican()
+      # Second phase, build books
+      self._build_publican(args)
+    # Third phase, publish books
+    self._publish_publican(args)
+
+  def _publish_publican(self,args):
+    self.check_kerberos_ticket()
+    # Executes the following command-line command for each publican book:
+    # rhpkg publican-build --lang en-US --message "commit message"
+
 
 # MAIN CODE - PROGRAM STARTS HERE!
 # --------------------------------
@@ -264,6 +289,11 @@ build_parser = subparsers.add_parser('build', help='Build Publican books')
 build_parser.add_argument('--nogen', help='Do not generate books, just build', action='store_true')
 build_parser.add_argument('--formats', help='Specify output formats, as a comma-separated list')
 build_parser.set_defaults(func=tasks.build_publican)
+
+# Create the sub-parser for the 'publish' command
+publish_parser = subparsers.add_parser('publish', help='Publish Publican books')
+publish_parser.add_argument('--nobuild', help='Do not build books, just publish', action='store_true')
+publish_parser.set_defaults(func=tasks.publish_publican)
 
 # Now, parse the args and call the relevant sub-command
 args = parser.parse_args()
