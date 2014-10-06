@@ -278,18 +278,43 @@ class BasicTasks:
     # rhpkg publican-build --lang en-US --message "commit message"
     
   def checksum(self,args):
+    if args.save:
+      self._checksum_save()
+    elif args.listchanged:
+      self._checksum_listchanged()
+    else:
+      self._checksum()
+  
+  def _checksum_save(self):
     isGitIndexChanged = False
     for bookFile in self.context.bookFiles:
       checksum = self.get_checksum(bookFile)
-      print 'Checksum for ' + bookFile
-      print checksum
+      print bookFile + '\t' + checksum
       checksumFile = bookFile + '.sha'
       with open(checksumFile, 'w') as f:
         f.write(checksum)
       self.context.git.add(checksumFile)
       isGitIndexChanged = True
     if isGitIndexChanged:
-      self.context.git.commit('sibin: saved XML document checksums') 
+      self.context.git.commit('sibin: saved XML document checksums')
+
+  def _checksum_listchanged(self):
+    for bookFile in self.context.bookFiles:
+      checksum = self.get_checksum(bookFile)
+      checksumFile = bookFile + '.sha'
+      # Try to retrieve a saved checksum value
+      savedChecksum = ''
+      if os.path.exists(checksumFile):
+        with open(checksumFile, 'r') as f:
+          savedChecksum = f.readline().strip()
+      if savedChecksum != checksum:
+        print bookFile + '\t' + checksum
+      
+  def _checksum(self):
+    for bookFile in self.context.bookFiles:
+      checksum = self.get_checksum(bookFile)
+      print bookFile + '\t' + checksum
+
 
 # MAIN CODE - PROGRAM STARTS HERE!
 # --------------------------------
@@ -324,7 +349,9 @@ publish_parser.add_argument('--nobuild', help='Do not build books, just publish'
 publish_parser.set_defaults(func=tasks.publish_publican)
 
 # Create the sub-parser for the 'checksum' command
-checksum_parser = subparsers.add_parser('checksum', help='Generate and store a checksum for every book in the library')
+checksum_parser = subparsers.add_parser('checksum', help='Calculate the current checksum for every book in the library')
+checksum_parser.add_argument('-s', '--save', help='Save and commit the current checksum to <Book>.xml.sha for each book', action='store_true')
+checksum_parser.add_argument('-l', '--listchanged', help='List the books that have changed since the last time the checksum was saved', action='store_true')
 checksum_parser.set_defaults(func=tasks.checksum)
 
 # Now, parse the args and call the relevant sub-command
