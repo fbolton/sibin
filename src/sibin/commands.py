@@ -141,7 +141,17 @@ class BasicTasks:
       # Modify just the first revision element
       break
     self.save_doc_to_xml_file(root, xmlfile, bookfileroot + '.ent')
-    
+
+  def gen_dirs(self,bookFile):
+    genbasedir = 'publican'
+    # Make the directories for this publican book
+    (bookRoot, ext) = os.path.splitext(os.path.basename(bookFile))
+    genbookdir = os.path.join(genbasedir, bookRoot)
+    genlangdir = os.path.join(genbookdir, 'en-US')
+    if not os.path.exists(genlangdir):
+      os.makedirs(genlangdir)
+    return (genbookdir, genlangdir, bookRoot)
+
   def generate_publican(self,args):
     self._generate_publican()
     
@@ -153,17 +163,11 @@ class BasicTasks:
       bookParser.appendLinkData(self.context.linkData)
       del bookParser
     # Start generating publican output
-    genbasedir = 'publican'
     for bookFile in self.context.bookFiles:
       bookParser = sibin.core.BookParser(sibin.core.Book(bookFile))
       bookParser.parse()
-      # cspec = self.initialize_cspec(bookParser.book)
-      # Make the directories for this publican book
-      (bookRoot, ext) = os.path.splitext(os.path.basename(bookFile))
-      genbookdir = os.path.join(genbasedir, bookRoot)
-      genlangdir = os.path.join(genbookdir, 'en-US')
-      if not os.path.exists(genlangdir):
-        os.makedirs(genlangdir)
+      # Get the directories for this publican book
+      (genbookdir, genlangdir, bookRoot) = self.gen_dirs(bookFile)
       # Need to compile a list of all the image files referenced by
       # each book and copy all of those images files into the en-US/images sub-directory.
       # Also need to check each fileref attribute, to make sure it has the form
@@ -263,19 +267,63 @@ class BasicTasks:
     if isBuildSuccess:
       self.restore_file_delete()
 
-  def publish_publican(self,args):
-    if not args.nobuild:
+  def publish(self,args):
+    # Check usage
+    if (args.all and args.changed) or not (args.all or args.changed):
+      print 'Error: must specify exactly ONE of the options --all or --changed'
+      return
+    self.check_kerberos_ticket()
+    if not args.nogen:
       # First phase, generate publican books
       self._generate_publican()
-      # Second phase, build books
-      self._build_publican(args)
-    # Third phase, publish books
-    self._publish_publican(args)
+    # Second phase, publish books
+    if args.all:
+      for bookFile in self.context.bookFiles:
+        self._publish_book(bookFile)
+    elif args.changed:
+      for bookFile in self.context.bookFiles:
+        checksum = self.get_checksum(bookFile)
+        checksumFile = bookFile + '.sha'
+        # Try to retrieve a saved checksum value
+        savedChecksum = ''
+        if os.path.exists(checksumFile):
+          with open(checksumFile, 'r') as f:
+            savedChecksum = f.readline().strip()
+        if savedChecksum != checksum:
+          self._publish_book(bookFile,checksum)
 
-  def _publish_publican(self,args):
-    self.check_kerberos_ticket()
-    # Executes the following command-line command for each publican book:
+  def _publish_book(self,bookFile,newChecksum=''):
+    print 'Publishing book: ' + bookFile
+    bookParser = sibin.core.BookParser(sibin.core.Book(bookFile))
+    bookParser.parse()
+    # Get the directories for this publican book
+    (genbookdir, genlangdir, bookRoot) = self.gen_dirs(bookFile)
     # rhpkg publican-build --lang en-US --message "commit message"
+    cwd = os.getcwd()
+    os.chdir(genbookdir)
+    response = subprocess.call(['rhpkg', 'publican-build', '--lang', 'en-US', '--message','Build ' + self.context.buildversion])
+    os.chdir(cwd)
+    if response != 0:
+      print 'Error: failed to build book: ' + bookFile
+      return
+    # Append 'brew tag-pkg' command for this book
+    buildID = self.context.productname.replace(' ','_') + '-' + bookParser.book.title.replace(' ','_') + '-' + self.context.productversion + '-web-en-US-' + self.context.productversion + '-' + self.context.buildversion + '.el6eng'
+    line = 'brew tag-pkg docs-rhel-6 ' + buildID
+    filename = 'brew-tag' + '.' + self.context.buildversion
+    with open(filename, 'a') as f:
+      f.write(line + '\n')
+    # Append build ID to email content for this book
+    line = buildID
+    filename = 'email' + '.' + self.context.buildversion
+    with open(filename, 'a') as f:
+      f.write(line + '\n')
+    # If upload is successful, save and commit the new checksum
+    if newChecksum:
+      checksumFile = bookFile + '.sha'
+      with open(checksumFile, 'w') as f:
+        f.write(newChecksum)
+      self.context.git.add(checksumFile)
+      self.context.git.commit('sibin: saved checksum for ' + bookFile)
     
   def checksum(self,args):
     if args.save:
@@ -345,8 +393,10 @@ build_parser.set_defaults(func=tasks.build_publican)
 
 # Create the sub-parser for the 'publish' command
 publish_parser = subparsers.add_parser('publish', help='Publish Publican books')
-publish_parser.add_argument('--nobuild', help='Do not build books, just publish', action='store_true')
-publish_parser.set_defaults(func=tasks.publish_publican)
+publish_parser.add_argument('--nogen', help='Do not generate books, just publish', action='store_true')
+publish_parser.add_argument('-a', '--all', help='Publish all books', action='store_true')
+publish_parser.add_argument('-c', '--changed', help='Publish only changed books, as determined by comparing with stored checksums', action='store_true')
+publish_parser.set_defaults(func=tasks.publish)
 
 # Create the sub-parser for the 'checksum' command
 checksum_parser = subparsers.add_parser('checksum', help='Calculate the current checksum for every book in the library')
