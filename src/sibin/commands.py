@@ -243,7 +243,7 @@ class BasicTasks:
         formats = formatsMinusSpaces.split(',')
       else:
         formats = [ formatsMinusSpaces ]
-    print 'Building the following formats: ' + str(formatsMinusSpaces)
+    print 'Building the following formats: ' + str(formats)
     # Start building publican books
     genbasedir = 'publican'
     langs = 'en-US'
