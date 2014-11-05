@@ -213,6 +213,11 @@ class LinkData:
         print 'references a non-existent book ID: ' + targetdoc
         print '    The book ID might be obsolete or you might have forgotten to add all of the',
         print 'relevant books to your sibin.cfg file.'
+        # TODO Might be better to add an option that specifies whether or
+        # not to ignore this warning (current default is to ignore).
+        # A legitimate reason for ignoring is when the broken link is
+        # inside a condition that will NOT be included in the book.
+        return ''
       topicTuple = bookId2Tuple[targetdoc]
       if topicTuple:
         bookTitle = topicTuple[0].title
@@ -233,6 +238,11 @@ class LinkData:
         print 'references a non-existent book ID: ' + targetdoc
         print '    The book ID might be obsolete or you might have forgotten to add all of the',
         print 'relevant books to your sibin.cfg file.'
+        # TODO Might be better to add an option that specifies whether or
+        # not to ignore this warning (current default is to ignore).
+        # A legitimate reason for ignoring is when the broken link is
+        # inside a condition that will NOT be included in the book.
+        return ''
       topicTuple = bookId2Tuple[targetdoc]
       if topicTuple:
         baseUrl = self.context.gethostname()
