@@ -195,6 +195,11 @@ class BasicTasks:
         shutil.copyfile(imageFile, genimagefile)
         # ToDo: Really ought to disambiguate file names in case
         # where two base file names are identical
+      # Copy boilerplate images from the 'template/images' directory
+      templatedir = self.context.gettemplate()
+      templateimagesdir = os.path.join(templatedir,'images')
+      for imageFile in os.listdir(templateimagesdir):
+        shutil.copy(os.path.join(templateimagesdir,imageFile),genimagesdir)
       transformedBook = self.context.transformer.dcbk2publican(bookParser.root, bookFile, bookParser.book.id)
       publicanBookRoot = bookParser.book.title.replace(' ','_')
       # Generate the main publican book file
@@ -204,7 +209,6 @@ class BasicTasks:
       genentitiesfile = os.path.join(genlangdir, publicanBookRoot + '.ent')
       shutil.copyfile(self.context.bookEntitiesFile, genentitiesfile)
       # Copy the publican.cfg file and append additional settings
-      templatedir = self.context.gettemplate()
       genpublicancfg = os.path.join(genbookdir, 'publican.cfg')
       shutil.copyfile(os.path.join(templatedir,'publican.cfg'), genpublicancfg)
       with open(genpublicancfg, 'a') as filehandle:
