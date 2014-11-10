@@ -196,18 +196,19 @@ class BasicTasks:
         # ToDo: Really ought to disambiguate file names in case
         # where two base file names are identical
       transformedBook = self.context.transformer.dcbk2publican(bookParser.root, bookFile, bookParser.book.id)
+      publicanBookRoot = bookParser.book.title.replace(' ','_')
       # Generate the main publican book file
-      genbookfile = os.path.join(genlangdir, bookRoot + '.xml')
-      self.save_doc_to_xml_file(transformedBook, genbookfile, bookRoot + '.ent')
+      genbookfile = os.path.join(genlangdir, publicanBookRoot + '.xml')
+      self.save_doc_to_xml_file(transformedBook, genbookfile, publicanBookRoot + '.ent')
       # Copy the entities file
-      genentitiesfile = os.path.join(genlangdir, bookRoot + '.ent')
+      genentitiesfile = os.path.join(genlangdir, publicanBookRoot + '.ent')
       shutil.copyfile(self.context.bookEntitiesFile, genentitiesfile)
       # Copy the publican.cfg file and append additional settings
       templatedir = self.context.gettemplate()
       genpublicancfg = os.path.join(genbookdir, 'publican.cfg')
       shutil.copyfile(os.path.join(templatedir,'publican.cfg'), genpublicancfg)
       with open(genpublicancfg, 'a') as filehandle:
-        filehandle.write('docname: ' + bookRoot + '\n')
+        # filehandle.write('docname: ' + bookRoot + '\n')
         conditions = self.context.getconditions()
         if conditions:
           filehandle.write('condition: ' + conditions + '\n')
@@ -217,11 +218,11 @@ class BasicTasks:
       # Copy revision history file
       genrevhistory = os.path.join(genlangdir, 'Revision_History.xml')
       shutil.copyfile(os.path.join(templatedir,'Revision_History.xml'), genrevhistory)
-      self.modify_revhistory_file(genrevhistory, bookParser, bookRoot)
+      self.modify_revhistory_file(genrevhistory, bookParser, publicanBookRoot)
       # Copy book info file
       genbookinfo = os.path.join(genlangdir, 'Book_Info.xml')
       shutil.copyfile(os.path.join(templatedir,'Book_Info.xml'), genbookinfo)
-      self.modify_book_info_file(genbookinfo, bookParser, bookRoot)
+      self.modify_book_info_file(genbookinfo, bookParser, publicanBookRoot)
       
   def build_publican(self,args):
     # First phase of build is to generate publican books
