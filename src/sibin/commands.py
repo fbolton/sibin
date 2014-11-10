@@ -268,19 +268,15 @@ class BasicTasks:
       self.restore_file_delete()
 
   def publish(self,args):
-    # Check usage
-    if (args.all and args.changed) or not (args.all or args.changed):
-      print 'Error: must specify exactly ONE of the options --all or --changed'
-      return
     self.check_kerberos_ticket()
     if not args.nogen:
       # First phase, generate publican books
       self._generate_publican()
     # Second phase, publish books
-    if args.all:
+    if args.all and not args.changed and not args.book:
       for bookFile in self.context.bookFiles:
         self._publish_book(bookFile)
-    elif args.changed:
+    elif args.changed and not args.book and not args.all:
       for bookFile in self.context.bookFiles:
         checksum = self.get_checksum(bookFile)
         checksumFile = bookFile + '.sha'
@@ -291,6 +287,14 @@ class BasicTasks:
             savedChecksum = f.readline().strip()
         if savedChecksum != checksum:
           self._publish_book(bookFile,checksum)
+    elif args.book and not args.all and not args.changed:
+      if os.path.exists(args.book):
+        self._publish_book(args.book)
+      else:
+        print 'Error: no such book - ' + args.book
+    else:
+      print 'Error: must specify exactly ONE of the options --all, --changed, or --book'
+      
 
   def _publish_book(self,bookFile,newChecksum=''):
     print 'Publishing book: ' + bookFile
@@ -396,6 +400,7 @@ publish_parser = subparsers.add_parser('publish', help='Publish Publican books')
 publish_parser.add_argument('--nogen', help='Do not generate books, just publish', action='store_true')
 publish_parser.add_argument('-a', '--all', help='Publish all books', action='store_true')
 publish_parser.add_argument('-c', '--changed', help='Publish only changed books, as determined by comparing with stored checksums', action='store_true')
+publish_parser.add_argument('-b', '--book', help='Specify a book to publish, as a pathname relative to the top directory of this project')
 publish_parser.set_defaults(func=tasks.publish)
 
 # Create the sub-parser for the 'checksum' command
