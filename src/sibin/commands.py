@@ -314,7 +314,8 @@ class BasicTasks:
     os.chdir(cwd)
     if response != 0:
       print 'Error: failed to build book: ' + bookFile
-      return
+      # Don't be too fussy about returning early -- network problems sometimes cause benign errors
+      # return
     # Append 'brew tag-pkg' command for this book
     buildID = self.context.productname.replace(' ','_') + '-' + bookParser.book.title.replace(' ','_') + '-' + self.context.productversion + '-web-en-US-' + self.context.productversion + '-' + self.context.buildversion + '.el6eng'
     line = 'brew tag-pkg docs-rhel-6 ' + buildID
