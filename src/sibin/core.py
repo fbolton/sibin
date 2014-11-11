@@ -41,6 +41,8 @@ class SibinContext:
     # list of all DB book files,
     # where dirs are specified relative to top level dir
     self.bookFiles = []
+    # Publican sort_order of book - low numbers listed before high
+    self.sortorder = {}
     # XML elements that divide up the book
     self.divElements = ['part', 'chapter', 'appendix', 'section']
     # Verbatim elements - whitespace is significant for these elements
@@ -83,6 +85,8 @@ class SibinContext:
       self.buildversion   = product.get('build')
     for book in root.xpath('/context/books/book'):
       self.bookFiles.append(book.get('file'))
+      if book.get('sortorder'):
+        self.sortorder[book.get('file')] = book.get('sortorder')
     for entities in root.xpath('/context/entities'):
       self.bookEntitiesFile = entities.get('file')
     for profile in root.xpath('/context/profiles/profile'):

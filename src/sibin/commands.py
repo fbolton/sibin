@@ -216,6 +216,8 @@ class BasicTasks:
         conditions = self.context.getconditions()
         if conditions:
           filehandle.write('condition: ' + conditions + '\n')
+        if bookFile in self.context.sortorder:
+          filehandle.write('sort_order: ' + self.context.sortorder[bookFile] + '\n')
       # Copy the template files
       shutil.copyfile(os.path.join(templatedir,'Author_Group.xml'), os.path.join(genlangdir, 'Author_Group.xml'))
       shutil.copyfile(os.path.join(templatedir,'Preface.xml'), os.path.join(genlangdir, 'Preface.xml'))
