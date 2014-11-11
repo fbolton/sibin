@@ -310,7 +310,7 @@ class BasicTasks:
     # rhpkg publican-build --lang en-US --message "commit message"
     cwd = os.getcwd()
     os.chdir(genbookdir)
-    response = subprocess.call(['rhpkg', 'publican-build', '--lang', 'en-US', '--message','Build ' + self.context.buildversion])
+    response = subprocess.call(['rhpkg', 'publican-build', '--nowait', '--lang', 'en-US', '--message','Build ' + self.context.buildversion])
     os.chdir(cwd)
     if response != 0:
       print 'Error: failed to build book: ' + bookFile
