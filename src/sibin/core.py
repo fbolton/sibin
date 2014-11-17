@@ -43,6 +43,8 @@ class SibinContext:
     self.bookFiles = []
     # Publican sort_order of book - low numbers listed before high
     self.sortorder = {}
+    # A dictionary of publican properties (additional settings in publican.cfg)
+    self.book2publicanprops = {}
     # XML elements that divide up the book
     self.divElements = ['part', 'chapter', 'appendix', 'section']
     # Verbatim elements - whitespace is significant for these elements
@@ -87,6 +89,14 @@ class SibinContext:
       self.bookFiles.append(book.get('file'))
       if book.get('sortorder'):
         self.sortorder[book.get('file')] = book.get('sortorder')
+      publicanprops = {}
+      for publicanprop in book.iter('publicanprop'):
+        propname  = publicanprop.get('name')
+        propvalue = publicanprop.get('value')
+        if propname and propvalue:
+          publicanprops[propname] = propvalue
+      if publicanprops:
+        self.book2publicanprops[book.get('file')] = publicanprops
     for entities in root.xpath('/context/entities'):
       self.bookEntitiesFile = entities.get('file')
     for profile in root.xpath('/context/profiles/profile'):
