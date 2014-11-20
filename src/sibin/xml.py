@@ -6,6 +6,7 @@ Created on Dec 20, 2013
 import sibin.core
 import copy
 import os.path
+import subprocess
 from lxml import etree
 from lxml import objectify
 
@@ -19,6 +20,12 @@ class XMLTransformer:
       raise Exception('XMLTransformer must be initialized with a SibinContext argument')
     self.context = context
     self.SECTION_TAGS = ['section', 'simplesect', 'sect1', 'sect2', 'sect3', 'sect4', 'sect5']
+
+  def getImageWidth(self,imagefile):
+    # Call the ImageMagick 'identify' utility to get the image metadata
+    metadata = subprocess.check_output(['identify', imagefile]).split()
+    (imagewidth, imagedepth) = metadata[2].split('x')
+    return imagewidth
 
   def dcbk2publican(self,element,xmlfile,bookid):
     self.bookid = bookid
@@ -53,6 +60,19 @@ class XMLTransformer:
       fileref = el.get('fileref') or el.get('{http://docbook.org/ns/docbook}fileref')
       if fileref and (not fileref.startswith('http:')):
         el.set('fileref', 'images/' + os.path.basename(fileref))
+        # Fix image scaling
+        contentwidth = el.get('contentwidth') or el.get('{http://docbook.org/ns/docbook}contentwidth')
+        (imageroot, imageformat) = os.path.splitext(fileref)
+        imageformat = imageformat.lower()
+        if not contentwidth and imageformat != 'svg':
+          imagefile = os.path.normpath(os.path.join(os.path.dirname(xmlfile),fileref))
+          imagewidth = self.getImageWidth(imagefile)
+          scale = el.get('scale') or el.get('{http://docbook.org/ns/docbook}scale')
+          if scale:
+            el.set('contentwidth', str( int(imagewidth)*int(scale) // 100 ) + 'px')
+            del el.attrib['scale']
+          else:
+            el.set('contentwidth', imagewidth + 'px')
     # Iterate over all child nodes
     for child in el:
       if isinstance(child, etree._Comment):

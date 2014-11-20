@@ -11,6 +11,10 @@ You need the following prerequisites to run Sibin:
         sudo yum install python-lxml
 
     **Note:** `lxml` depends on the C libraries, `libxml2` and `libxslt` (usually installed on most UNIX/LINUX systems).
+
+* ImageMagick. Install it by entering:
+
+        sudo yum install ImageMagick-devel
     
 * Publican. Install it by entering:
 
