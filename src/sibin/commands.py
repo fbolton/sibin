@@ -185,6 +185,11 @@ class BasicTasks:
         doc = etree.parse(xmlfile,parserForEntities)
         root = doc.getroot()
         imageFileSet |= self.getImageFileSet(root,xmlfile)
+      # Create an image file map, used to locate image files
+      imageFileMap = {}
+      for imageFile in imageFileSet:
+        imageFileMap[os.path.basename(imageFile)] = imageFile
+      self.context.imageFileMap = imageFileMap
       # print 'imageFileSet for book [' + bookFile + '] is: ' + str(imageFileSet)
       # Copy image files to en-US/images sub-directory
       genimagesdir = os.path.join(genlangdir, 'images')

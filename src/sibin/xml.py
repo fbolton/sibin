@@ -38,6 +38,8 @@ class XMLTransformer:
     i = el.tag.find('}')
     if i >= 0:
       tagname = el.tag[i+1:]
+    else:
+      tagname = el.tag
     # Process attributes
     xmlBaseName = '{http://www.w3.org/XML/1998/namespace}base'
     if xmlBaseName in el.attrib:
@@ -65,7 +67,7 @@ class XMLTransformer:
         (imageroot, imageformat) = os.path.splitext(fileref)
         imageformat = imageformat.lower()
         if not contentwidth and imageformat != 'svg':
-          imagefile = os.path.normpath(os.path.join(os.path.dirname(xmlfile),fileref))
+          imagefile = self.context.imageFileMap[os.path.basename(fileref)]
           imagewidth = self.getImageWidth(imagefile)
           scale = el.get('scale') or el.get('{http://docbook.org/ns/docbook}scale')
           if scale:
@@ -73,6 +75,8 @@ class XMLTransformer:
             del el.attrib['scale']
           else:
             el.set('contentwidth', imagewidth + 'px')
+    elif tagname == 'programlisting':
+      self._dcbk2publican_verbatim(el)
     # Iterate over all child nodes
     for child in el:
       if isinstance(child, etree._Comment):
@@ -203,3 +207,41 @@ class XMLTransformer:
       # Replace 'el' by the newly created 'comment'
       parent.replace(el,comment)
 
+  def _dcbk2publican_verbatim(self,el):
+    for child in el.xpath("./*[local-name()='emphasis']"):
+      if '\n' in child.text:
+        lines = child.text.splitlines()
+        lastline = lines.pop()
+        for line in lines:
+          # Publican requires leading whitespace to lie *outside* the inline element
+          (leadspaces, restofline) = self.splitleadingspaces(line)
+          if child.getprevious() is not None:
+            if child.getprevious().tail is not None:
+              child.getprevious().tail += leadspaces
+            else:
+              child.getprevious().tail = leadspaces
+          else:
+            if el.text is not None:
+              el.text += leadspaces
+            else:
+              el.text = leadspaces
+          # Make a new child element
+          newchild = el.makeelement('{http://docbook.org/ns/docbook}emphasis', child.attrib)
+          newchild.text = restofline
+          newchild.tail = '\n'
+          # Insert newchild immediately before child
+          childindex = el.index(child)
+          el.insert(childindex, newchild)
+        # Publican requires leading whitespace to lie *outside* the inline element
+        (leadspaces, restofline) = self.splitleadingspaces(lastline)
+        if child.getprevious().tail is not None:
+          child.getprevious().tail += leadspaces
+        else:
+          child.getprevious().tail = leadspaces
+        child.text = restofline
+
+  def splitleadingspaces(self,text):
+    strippedstr = text.lstrip()
+    difflen = len(text) - len(strippedstr)
+    leadspaces = '' + ' ' * difflen
+    return (leadspaces, strippedstr)
