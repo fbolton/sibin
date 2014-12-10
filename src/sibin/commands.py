@@ -205,9 +205,13 @@ class BasicTasks:
       templateimagesdir = os.path.join(templatedir,'images')
       for imageFile in os.listdir(templateimagesdir):
         shutil.copy(os.path.join(templateimagesdir,imageFile),genimagesdir)
-      transformedBook = self.context.transformer.dcbk2publican(bookParser.root, bookFile, bookParser.book.id)
+      # Transform the main publican book file
+      parserForEntities = etree.XMLParser(resolve_entities=False)
+      doc = etree.parse(bookFile,parserForEntities)
+      doc.xinclude()
+      transformedBook = self.context.transformer.dcbk2publican(doc.getroot(), bookFile, bookParser.book.id)
       publicanBookRoot = bookParser.book.title.replace(' ','_')
-      # Generate the main publican book file
+      # Write the main publican book file
       genbookfile = os.path.join(genlangdir, publicanBookRoot + '.xml')
       self.save_doc_to_xml_file(transformedBook, genbookfile, publicanBookRoot + '.ent')
       # Copy the entities file
