@@ -406,6 +406,30 @@ class BasicTasks:
     for bookFile in self.context.bookFiles:
       checksum = self.get_checksum(bookFile)
       print bookFile + '\t' + checksum
+  
+  def zip(self,args):
+    print 'Creating a zip file:'
+    zipbasedir = 'zip'
+    shutil.rmtree(zipbasedir)
+    # Iterate over all of the books
+    for bookFile in self.context.bookFiles:
+      bookParser = sibin.core.BookParser(sibin.core.Book(bookFile))
+      bookParser.parse()
+      # Get the directories for this publican book
+      (genbookdir, genlangdir, bookRoot) = self.gen_dirs(bookFile)
+      # Define the directories to copy from
+      fromhtmldir = os.path.join(genbookdir,'tmp','en-US','html')
+      fromhtmlsingledir = os.path.join(genbookdir,'tmp','en-US','html-single')
+      # Define the directories to copy to
+      tobookdir = os.path.join(zipbasedir, self.context.productname.replace(' ','_'), self.context.productversion, bookParser.book.title.replace(' ','_'))
+      tohtmldir       = os.path.join(tobookdir,'html')
+      tohtmlsingledir = os.path.join(tobookdir,'html-single')
+      # Copy book formats, if the 'from' dir exists
+      if os.path.exists(fromhtmldir):
+        shutil.copytree(fromhtmldir, tohtmldir)
+      if os.path.exists(fromhtmlsingledir):
+        shutil.copytree(fromhtmlsingledir, tohtmlsingledir)
+
 
 
 # MAIN CODE - PROGRAM STARTS HERE!
@@ -448,6 +472,10 @@ checksum_parser = subparsers.add_parser('checksum', help='Calculate the current 
 checksum_parser.add_argument('-s', '--save', help='Save and commit the current checksum to <Book>.xml.sha for each book', action='store_true')
 checksum_parser.add_argument('-l', '--listchanged', help='List the books that have changed since the last time the checksum was saved', action='store_true')
 checksum_parser.set_defaults(func=tasks.checksum)
+
+# Create the sub-parser for the 'zip' command
+zip_parser = subparsers.add_parser('zip', help='Create a Zip file of all the books that have just been built locally')
+zip_parser.set_defaults(func=tasks.zip)
 
 # Now, parse the args and call the relevant sub-command
 args = parser.parse_args()
