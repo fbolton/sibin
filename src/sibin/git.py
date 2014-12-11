@@ -14,6 +14,8 @@ class GitUtility:
   '''
 
   def __init__(self,root):
+    # Cumulative commit message
+    self.commitMessage = ''
     # Make sure that the 'root' dir  is specified as an absolute path name
     if os.path.isabs(root):
       self.root = root
@@ -25,6 +27,11 @@ class GitUtility:
     Creates a new (empty) git repository
     '''
     subprocess.check_call(['git', 'init'])
+    
+  def append_message(self,message):
+    if self.commitMessage:
+      self.commitMessage += '\n'
+    self.commitMessage += message
   
   def add(self,filesOrDirs=[]):
     '''
@@ -43,11 +50,14 @@ class GitUtility:
       files = glob.glob(pattern)
       if files:
         self.add(files)
-  
-  def commit(self,comment):
+    
+  def commit(self,comment=''):
     '''
     Commit all of the files in the git index, with the specified commit comment
     '''
+    if not comment:
+      comment = self.commitMessage
+      self.commitMessage = ''
     subprocess.check_call(['git', 'commit', '-m', comment])
     # Consult the git log to get the SHA of that last commit
     commit = subprocess.check_output(['git', 'log', '-n', '1', '--pretty=format:%H'])

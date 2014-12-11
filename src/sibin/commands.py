@@ -297,6 +297,7 @@ class BasicTasks:
       for bookFile in self.context.bookFiles:
         self._publish_book(bookFile)
     elif args.changed and not args.book and not args.all:
+      isGitIndexChanged = False
       for bookFile in self.context.bookFiles:
         checksum = self.get_checksum(bookFile)
         checksumFile = bookFile + '.sha'
@@ -307,9 +308,27 @@ class BasicTasks:
             savedChecksum = f.readline().strip()
         if savedChecksum != checksum:
           self._publish_book(bookFile,checksum)
+          isGitIndexChanged = True
+      # Commit the new checksums
+      if isGitIndexChanged:
+        self.context.git.commit()
     elif args.book and not args.all and not args.changed:
       if os.path.exists(args.book):
-        self._publish_book(args.book)
+        bookFile = args.book
+        checksum = self.get_checksum(bookFile)
+        checksumFile = bookFile + '.sha'
+        # Try to retrieve a saved checksum value
+        savedChecksum = ''
+        if os.path.exists(checksumFile):
+          with open(checksumFile, 'r') as f:
+            savedChecksum = f.readline().strip()
+        if savedChecksum:
+          self._publish_book(bookFile,checksum)
+          # Commit the new checksum
+          if savedChecksum != checksum:
+            self.context.git.commit()
+        else:
+          self._publish_book(bookFile)          
       else:
         print 'Error: no such book - ' + args.book
     else:
@@ -342,13 +361,13 @@ class BasicTasks:
     filename = 'email' + '.' + self.context.buildversion
     with open(filename, 'a') as f:
       f.write(line + '\n')
-    # If upload is successful, save and commit the new checksum
+    # If upload is successful, save the new checksum and add to git
     if newChecksum:
       checksumFile = bookFile + '.sha'
       with open(checksumFile, 'w') as f:
         f.write(newChecksum)
       self.context.git.add(checksumFile)
-      self.context.git.commit('sibin: saved checksum for ' + bookFile)
+      self.context.git.append_message('sibin: build ' + self.context.buildversion + ': saved checksum for ' + bookFile)
     
   def checksum(self,args):
     if args.save:
