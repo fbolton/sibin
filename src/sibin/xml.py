@@ -209,7 +209,7 @@ class XMLTransformer:
 
   def _dcbk2publican_verbatim(self,el):
     for child in el.xpath("./*[local-name()='emphasis']"):
-      if '\n' in child.text:
+      if (child.text is not None) and ('\n' in child.text):
         lines = child.text.splitlines()
         lastline = lines.pop()
         for line in lines:
