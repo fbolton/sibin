@@ -242,6 +242,14 @@ class BasicTasks:
       genbookinfo = os.path.join(genlangdir, 'Book_Info.xml')
       shutil.copyfile(os.path.join(templatedir,'Book_Info.xml'), genbookinfo)
       self.modify_book_info_file(genbookinfo, bookParser, publicanBookRoot)
+      # Copy files from files/ subdirectory
+      filesdir = os.path.normpath(os.path.join(os.path.dirname(bookFile),'files'))
+      genfilesdir = os.path.join(genlangdir, 'files')
+      if os.path.exists(filesdir):
+        if not os.path.exists(genfilesdir):
+          os.makedirs(genfilesdir)
+        for filesFile in os.listdir(filesdir):
+          shutil.copy(os.path.join(filesdir,filesFile),genfilesdir)
       
   def build_publican(self,args):
     # First phase of build is to generate publican books
