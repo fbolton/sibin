@@ -52,7 +52,8 @@ class BasicTasks:
       f.write(line + '\n')
   
   def restore_file_delete(self):
-    os.unlink('sibin.restore')
+    if os.path.exists('sbin.restore'):
+      os.unlink('sibin.restore')
     
   def check_kerberos_ticket(self):
     kresponse = subprocess.call(['klist'])
@@ -72,7 +73,7 @@ class BasicTasks:
     del stringifiedbook
     del doc
     return checksum
-
+  
   def parse_xincludes(self, xmlfile, ignoreDirs=[]):
     '''
     Return the set of all files recursively xincluded by xmlfile,
@@ -153,21 +154,24 @@ class BasicTasks:
     return (genbookdir, genlangdir, bookRoot)
 
   def generate_publican(self,args):
-    self._generate_publican()
+    if args.modtime:
+      self._generate_publican(int(args.modtime))
+    else:
+      # By default, consider all modifications since the Unix epoch
+      self._generate_publican(0)
     
-  def _generate_publican(self):
+  def _generate_publican(self,specifiedmodtime):
     # Populate topic link data
     for bookFile in self.context.bookFiles:
       bookParser = sibin.core.BookParser(sibin.core.Book(bookFile))
       bookParser.parse()
       bookParser.appendLinkData(self.context.linkData)
       del bookParser
+    booksToGenerate = set()
     # Start generating publican output
     for bookFile in self.context.bookFiles:
       bookParser = sibin.core.BookParser(sibin.core.Book(bookFile))
       bookParser.parse()
-      # Get the directories for this publican book
-      (genbookdir, genlangdir, bookRoot) = self.gen_dirs(bookFile)
       # Need to compile a list of all the image files referenced by
       # each book and copy all of those images files into the en-US/images sub-directory.
       # Also need to check each fileref attribute, to make sure it has the form
@@ -185,76 +189,95 @@ class BasicTasks:
         doc = etree.parse(xmlfile,parserForEntities)
         root = doc.getroot()
         imageFileSet |= self.getImageFileSet(root,xmlfile)
-      # Create an image file map, used to locate image files
-      imageFileMap = {}
-      for imageFile in imageFileSet:
-        imageFileMap[os.path.basename(imageFile)] = imageFile
-      self.context.imageFileMap = imageFileMap
-      # print 'imageFileSet for book [' + bookFile + '] is: ' + str(imageFileSet)
-      # Copy image files to en-US/images sub-directory
-      genimagesdir = os.path.join(genlangdir, 'images')
-      if not os.path.exists(genimagesdir):
-        os.makedirs(genimagesdir)
-      for imageFile in imageFileSet:
-        genimagefile = os.path.join(genimagesdir, os.path.basename(imageFile) )
-        shutil.copyfile(imageFile, genimagefile)
-        # ToDo: Really ought to disambiguate file names in case
-        # where two base file names are identical
-      # Copy boilerplate images from the 'template/images' directory
-      templatedir = self.context.gettemplate()
-      templateimagesdir = os.path.join(templatedir,'images')
-      for imageFile in os.listdir(templateimagesdir):
-        shutil.copy(os.path.join(templateimagesdir,imageFile),genimagesdir)
-      # Transform the main publican book file
-      parserForEntities = etree.XMLParser(resolve_entities=False)
-      doc = etree.parse(bookFile,parserForEntities)
-      doc.xinclude()
-      transformedBook = self.context.transformer.dcbk2publican(doc.getroot(), bookFile, bookParser.book.id)
-      publicanBookRoot = bookParser.book.title.replace(' ','_')
-      # Write the main publican book file
-      genbookfile = os.path.join(genlangdir, publicanBookRoot + '.xml')
-      self.save_doc_to_xml_file(transformedBook, genbookfile, publicanBookRoot + '.ent')
-      # Copy the entities file
-      genentitiesfile = os.path.join(genlangdir, publicanBookRoot + '.ent')
-      shutil.copyfile(self.context.bookEntitiesFile, genentitiesfile)
-      # Copy the publican.cfg file and append additional settings
-      genpublicancfg = os.path.join(genbookdir, 'publican.cfg')
-      shutil.copyfile(os.path.join(templatedir,'publican.cfg'), genpublicancfg)
-      with open(genpublicancfg, 'a') as filehandle:
-        # filehandle.write('docname: ' + bookRoot + '\n')
-        conditions = self.context.getconditions()
-        if conditions:
-          filehandle.write('condition: ' + conditions + '\n')
-        if bookFile in self.context.sortorder:
-          filehandle.write('sort_order: ' + self.context.sortorder[bookFile] + '\n')
-        if bookFile in self.context.book2publicanprops:
-          publicanprops = self.context.book2publicanprops[bookFile]
-          for name in publicanprops:
-            filehandle.write(name + ': ' + publicanprops[name] + '\n')
-      # Copy the template files
-      shutil.copyfile(os.path.join(templatedir,'Author_Group.xml'), os.path.join(genlangdir, 'Author_Group.xml'))
-      shutil.copyfile(os.path.join(templatedir,'Preface.xml'), os.path.join(genlangdir, 'Preface.xml'))
-      # Copy revision history file
-      genrevhistory = os.path.join(genlangdir, 'Revision_History.xml')
-      shutil.copyfile(os.path.join(templatedir,'Revision_History.xml'), genrevhistory)
-      self.modify_revhistory_file(genrevhistory, bookParser, publicanBookRoot)
-      # Copy book info file
-      genbookinfo = os.path.join(genlangdir, 'Book_Info.xml')
-      shutil.copyfile(os.path.join(templatedir,'Book_Info.xml'), genbookinfo)
-      self.modify_book_info_file(genbookinfo, bookParser, publicanBookRoot)
-      # Copy files from files/ subdirectory
-      filesdir = os.path.normpath(os.path.join(os.path.dirname(bookFile),'files'))
-      genfilesdir = os.path.join(genlangdir, 'files')
-      if os.path.exists(filesdir):
-        if not os.path.exists(genfilesdir):
-          os.makedirs(genfilesdir)
-        for filesFile in os.listdir(filesdir):
-          shutil.copy(os.path.join(filesdir,filesFile),genfilesdir)
+      # Decide whether or not to publish this book,
+      # depending on whether or not it was modified recently
+      # (i.e. if date of last book modification > specifiedmodtime)
+      # 
+      generateThisBook = False
+      for contentfile in (xincludeFileSet | imageFileSet):
+        filemodtime = self.context.git.mod_time(contentfile)
+        if filemodtime >= specifiedmodtime:
+          generateThisBook = True
+          booksToGenerate.add(bookFile)
+          break
+      if generateThisBook:
+        print 'Generating: ' + bookFile
+        # Get the directories for this publican book
+        (genbookdir, genlangdir, bookRoot) = self.gen_dirs(bookFile)
+        # Create an image file map, used to locate image files
+        imageFileMap = {}
+        for imageFile in imageFileSet:
+          imageFileMap[os.path.basename(imageFile)] = imageFile
+        self.context.imageFileMap = imageFileMap
+        # print 'imageFileSet for book [' + bookFile + '] is: ' + str(imageFileSet)
+        # Copy image files to en-US/images sub-directory
+        genimagesdir = os.path.join(genlangdir, 'images')
+        if not os.path.exists(genimagesdir):
+          os.makedirs(genimagesdir)
+        for imageFile in imageFileSet:
+          genimagefile = os.path.join(genimagesdir, os.path.basename(imageFile) )
+          shutil.copyfile(imageFile, genimagefile)
+          # ToDo: Really ought to disambiguate file names in case
+          # where two base file names are identical
+        # Copy boilerplate images from the 'template/images' directory
+        templatedir = self.context.gettemplate()
+        templateimagesdir = os.path.join(templatedir,'images')
+        for imageFile in os.listdir(templateimagesdir):
+          shutil.copy(os.path.join(templateimagesdir,imageFile),genimagesdir)
+        # Transform the main publican book file
+        parserForEntities = etree.XMLParser(resolve_entities=False)
+        doc = etree.parse(bookFile,parserForEntities)
+        doc.xinclude()
+        transformedBook = self.context.transformer.dcbk2publican(doc.getroot(), bookFile, bookParser.book.id)
+        publicanBookRoot = bookParser.book.title.replace(' ','_')
+        # Write the main publican book file
+        genbookfile = os.path.join(genlangdir, publicanBookRoot + '.xml')
+        self.save_doc_to_xml_file(transformedBook, genbookfile, publicanBookRoot + '.ent')
+        # Copy the entities file
+        genentitiesfile = os.path.join(genlangdir, publicanBookRoot + '.ent')
+        shutil.copyfile(self.context.bookEntitiesFile, genentitiesfile)
+        # Copy the publican.cfg file and append additional settings
+        genpublicancfg = os.path.join(genbookdir, 'publican.cfg')
+        shutil.copyfile(os.path.join(templatedir,'publican.cfg'), genpublicancfg)
+        with open(genpublicancfg, 'a') as filehandle:
+          # filehandle.write('docname: ' + bookRoot + '\n')
+          conditions = self.context.getconditions()
+          if conditions:
+            filehandle.write('condition: ' + conditions + '\n')
+          if bookFile in self.context.sortorder:
+            filehandle.write('sort_order: ' + self.context.sortorder[bookFile] + '\n')
+          if bookFile in self.context.book2publicanprops:
+            publicanprops = self.context.book2publicanprops[bookFile]
+            for name in publicanprops:
+              filehandle.write(name + ': ' + publicanprops[name] + '\n')
+        # Copy the template files
+        shutil.copyfile(os.path.join(templatedir,'Author_Group.xml'), os.path.join(genlangdir, 'Author_Group.xml'))
+        shutil.copyfile(os.path.join(templatedir,'Preface.xml'), os.path.join(genlangdir, 'Preface.xml'))
+        # Copy revision history file
+        genrevhistory = os.path.join(genlangdir, 'Revision_History.xml')
+        shutil.copyfile(os.path.join(templatedir,'Revision_History.xml'), genrevhistory)
+        self.modify_revhistory_file(genrevhistory, bookParser, publicanBookRoot)
+        # Copy book info file
+        genbookinfo = os.path.join(genlangdir, 'Book_Info.xml')
+        shutil.copyfile(os.path.join(templatedir,'Book_Info.xml'), genbookinfo)
+        self.modify_book_info_file(genbookinfo, bookParser, publicanBookRoot)
+        # Copy files from files/ subdirectory
+        filesdir = os.path.normpath(os.path.join(os.path.dirname(bookFile),'files'))
+        genfilesdir = os.path.join(genlangdir, 'files')
+        if os.path.exists(filesdir):
+          if not os.path.exists(genfilesdir):
+            os.makedirs(genfilesdir)
+          for filesFile in os.listdir(filesdir):
+            shutil.copy(os.path.join(filesdir,filesFile),genfilesdir)
       
   def build_publican(self,args):
-    # First phase of build is to generate publican books
+    # First phase, generate the publican books
     if not args.nogen:
-      self._generate_publican()
+      if args.modtime:
+        self._generate_publican(int(args.modtime))
+      else:
+        # By default, consider all modifications since the Unix epoch
+        self._generate_publican(0)
     # Second phase, build the books
     self._build_publican(args)
 
@@ -441,7 +464,9 @@ class BasicTasks:
   def clean(self,args):
     print 'Cleaning sibin files'
     genbasedir = 'publican'
-    shutil.rmtree(genbasedir)
+    if os.path.exists(genbasedir):
+      shutil.rmtree(genbasedir)
+    self.restore_file_delete()
 
 
 
@@ -464,12 +489,14 @@ subparsers = parser.add_subparsers()
 
 # Create the sub-parser for the 'gen' command
 gen_parser = subparsers.add_parser('gen', help='Generate Publican books')
+gen_parser.add_argument('-m', '--modtime', help='Generate any books modified after the specified time')
 gen_parser.set_defaults(func=tasks.generate_publican)
 
 # Create the sub-parser for the 'build' command
 build_parser = subparsers.add_parser('build', help='Build Publican books')
 build_parser.add_argument('--nogen', help='Do not generate books, just build', action='store_true')
 build_parser.add_argument('--formats', help='Specify output formats, as a comma-separated list')
+build_parser.add_argument('-m', '--modtime', help='Build any books modified after the specified time')
 build_parser.set_defaults(func=tasks.build_publican)
 
 # Create the sub-parser for the 'publish' command

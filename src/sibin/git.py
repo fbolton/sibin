@@ -93,3 +93,11 @@ class GitUtility:
     blobContents = subprocess.check_output(['git', 'show', commit + ':' + filename])
     return blobContents
   
+  def mod_time(self,filename):
+    '''
+    Get the last modification time of 'filename', according to the commit log.
+    Time is returned as UNIX time (number of seconds since 1970, I think).
+    '''
+    unixtime = subprocess.check_output(['git', 'log', '-1', '--format=%ct', filename])
+    return int(unixtime)
+  
