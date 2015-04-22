@@ -11,8 +11,9 @@ import sys
 
 # Re-encode special character codes to their names (e.g. &#160; to &nbsp;)
 def reencode(string):
-  for code,name in htmlentitydefs.codepoint2name.items():
-    string = re.sub('&#'+str(code)+';', '&'+name+';', string)
+  #for code,name in htmlentitydefs.codepoint2name.items():
+    #string = re.sub('&#'+str(code)+';', '&'+name+';', string)
+  string.replace('&#160;', '&nbsp;')
   return string
 
 # Parent function to convert and sanitize and xml etree object into a string
