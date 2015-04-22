@@ -43,7 +43,8 @@ class BasicTasks:
     filename = 'sibin.restore'
     if os.path.exists(filename):
       with open(filename, 'r') as f:
-        bookSet.add(f.readline().strip() )
+        for line in f:
+          bookSet.add(line.strip() )
     return bookSet
   
   def restore_file_append(self, line):
@@ -167,7 +168,7 @@ class BasicTasks:
       bookParser.parse()
       bookParser.appendLinkData(self.context.linkData)
       del bookParser
-    booksToGenerate = set()
+    booksGenerated = set()
     # Start generating publican output
     for bookFile in self.context.bookFiles:
       bookParser = sibin.core.BookParser(sibin.core.Book(bookFile))
@@ -198,7 +199,7 @@ class BasicTasks:
         filemodtime = self.context.git.mod_time(contentfile)
         if filemodtime >= specifiedmodtime:
           generateThisBook = True
-          booksToGenerate.add(bookFile)
+          booksGenerated.add(bookFile)
           break
       if generateThisBook:
         print 'Generating: ' + bookFile
@@ -269,23 +270,19 @@ class BasicTasks:
             os.makedirs(genfilesdir)
           for filesFile in os.listdir(filesdir):
             shutil.copy(os.path.join(filesdir,filesFile),genfilesdir)
+    return booksGenerated
       
   def build_publican(self,args):
     # First phase, generate the publican books
     if not args.nogen:
       if args.modtime:
-        self._generate_publican(int(args.modtime))
+        booksToBuild = self._generate_publican(int(args.modtime))
       else:
         # By default, consider all modifications since the Unix epoch
-        self._generate_publican(0)
-    # Second phase, build the books
-    self._build_publican(args)
-
-  def _build_publican(self,args):
-    # Check whether the previous build was aborted
-    previouslyBuiltBooks = self.restore_file_read()
-    if previouslyBuiltBooks:
-      print 'WARNING: Restoring after aborted build. Will only build the books not built last time around.'
+        booksToBuild = self._generate_publican(0)
+    else:
+      # If 'nogen', assume that all of the books have already been generated
+      booksToBuild = self.context.bookFiles
     # Parse --format command-line argument
     formats = ['html', 'html-single']
     if args.formats:
@@ -295,11 +292,19 @@ class BasicTasks:
       else:
         formats = [ formatsMinusSpaces ]
     print 'Building the following formats: ' + str(formats)
+    # Second phase, build the books
+    self._build_publican(booksToBuild,formats)
+
+  def _build_publican(self,booksToBuild,formats):
+    # Check whether the previous build was aborted
+    previouslyBuiltBooks = self.restore_file_read()
+    if previouslyBuiltBooks:
+      print 'WARNING: Restoring after aborted build. Will only build the books not built last time around.'
     # Start building publican books
     genbasedir = 'publican'
     langs = 'en-US'
     isBuildSuccess = True
-    booksToBuild = set(self.context.bookFiles) - previouslyBuiltBooks
+    booksToBuild = booksToBuild - previouslyBuiltBooks
     for bookFile in booksToBuild:
       # Get the directory name for this publican book
       (bookRoot, ext) = os.path.splitext(os.path.basename(bookFile))
