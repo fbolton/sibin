@@ -2,4 +2,5 @@
 SCRIPTDIR=$(dirname $0)
 export PYTHONPATH=$SCRIPTDIR/../src
 
+#python -m cProfile -s ncalls $PYTHONPATH/sibin/commands.py "$@"
 python $PYTHONPATH/sibin/commands.py "$@"
