@@ -7,6 +7,7 @@ Created on Dec 17, 2013
 import glob
 import subprocess
 import os.path
+import os
 
 class GitUtility:
   '''
@@ -99,5 +100,18 @@ class GitUtility:
     Time is returned as UNIX time (number of seconds since 1970, I think).
     '''
     unixtime = subprocess.check_output(['git', 'log', '-1', '--format=%ct', filename])
+    if not unixtime:
+      # If unixtime is empty, it probably means that 'filename' is in a submodule,
+      # so we switch to the subdirectory and retry the git log command.
+      if filename.find(os.sep) >= 0:
+        (subdir, subfilename) = filename.split(os.sep, 1)
+        cwd = os.getcwd()
+        os.chdir(subdir)
+        unixtime = subprocess.check_output(['git', 'log', '-1', '--format=%ct', subfilename])
+        os.chdir(cwd)
+        # print 'In submodule ' + subdir + ': for filename = ' + subfilename + ', unixtime = ' + unixtime
+      if not unixtime:
+        # If all else fails, set 'unixtime' to zero
+        unixtime = 0
     return int(unixtime)
   
