@@ -52,7 +52,7 @@ class BasicTasks:
       f.write(line + '\n')
   
   def restore_file_delete(self):
-    if os.path.exists('sbin.restore'):
+    if os.path.exists('sibin.restore'):
       os.unlink('sibin.restore')
     
   def check_kerberos_ticket(self):
@@ -322,7 +322,7 @@ class BasicTasks:
     self.check_kerberos_ticket()
     if not args.nogen:
       # First phase, generate publican books
-      self._generate_publican()
+      self._generate_publican(0)
     # Second phase, publish books
     if args.all and not args.changed and not args.book:
       for bookFile in self.context.bookFiles:
