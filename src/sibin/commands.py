@@ -157,6 +157,8 @@ class BasicTasks:
   def generate_publican(self,args):
     if args.modtime:
       self._generate_publican(int(args.modtime))
+    elif (args.sincelastcommit):
+      self._generate_publican(self.context.git.last_commit_time())
     else:
       # By default, consider all modifications since the Unix epoch
       self._generate_publican(0)
@@ -277,6 +279,8 @@ class BasicTasks:
     if not args.nogen:
       if args.modtime:
         booksToBuild = self._generate_publican(int(args.modtime))
+      elif (args.sincelastcommit):
+        booksToBuild = self._generate_publican(self.context.git.last_commit_time())
       else:
         # By default, consider all modifications since the Unix epoch
         booksToBuild = self._generate_publican(0)
@@ -495,6 +499,7 @@ subparsers = parser.add_subparsers()
 # Create the sub-parser for the 'gen' command
 gen_parser = subparsers.add_parser('gen', help='Generate Publican books')
 gen_parser.add_argument('-m', '--modtime', help='Generate any books modified after the specified time')
+gen_parser.add_argument('-s', '--sincelastcommit', help='Generate any books modified since the last commit', action='store_true')
 gen_parser.set_defaults(func=tasks.generate_publican)
 
 # Create the sub-parser for the 'build' command
@@ -502,6 +507,7 @@ build_parser = subparsers.add_parser('build', help='Build Publican books')
 build_parser.add_argument('--nogen', help='Do not generate books, just build', action='store_true')
 build_parser.add_argument('--formats', help='Specify output formats, as a comma-separated list')
 build_parser.add_argument('-m', '--modtime', help='Build any books modified after the specified time')
+build_parser.add_argument('-s', '--sincelastcommit', help='Build any books modified since the last commit', action='store_true')
 build_parser.set_defaults(func=tasks.build_publican)
 
 # Create the sub-parser for the 'publish' command

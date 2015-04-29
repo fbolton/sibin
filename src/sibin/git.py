@@ -114,4 +114,11 @@ class GitUtility:
         # If all else fails, set 'unixtime' to zero
         unixtime = 0
     return int(unixtime)
+
+  def last_commit_time(self):
+    '''
+    Get the time of the last commit, returned as UNIX time.
+    '''
+    unixtime = subprocess.check_output(['git', 'log', '-1', '--format=%ct'])
+    return int(unixtime)
   
