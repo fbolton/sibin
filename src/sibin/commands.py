@@ -331,12 +331,16 @@ class BasicTasks:
     self.check_kerberos_ticket()
     if not args.nogen:
       # First phase, generate publican books
-      self._generate_publican(0)
+      if args.modtime:
+        booksToPublish = self._generate_publican(int(args.modtime))
+      else:
+        # By default, consider all modifications since the Unix epoch
+        booksToPublish = self._generate_publican(0)
     # Second phase, publish books
-    if args.all and not args.changed and not args.book:
+    if args.all and not args.changed and not args.book and not args.modtime:
       for bookFile in self.context.bookFiles:
         self._publish_book(bookFile)
-    elif args.changed and not args.book and not args.all:
+    elif args.changed and not args.book and not args.all and not args.modtime:
       isGitIndexChanged = False
       for bookFile in self.context.bookFiles:
         checksum = self.get_checksum(bookFile)
@@ -352,7 +356,7 @@ class BasicTasks:
       # Commit the new checksums
       if isGitIndexChanged:
         self.context.git.commit()
-    elif args.book and not args.all and not args.changed:
+    elif args.book and not args.all and not args.changed and not args.modtime:
       if os.path.exists(args.book):
         bookFile = args.book
         checksum = self.get_checksum(bookFile)
@@ -371,6 +375,9 @@ class BasicTasks:
           self._publish_book(bookFile)          
       else:
         print 'Error: no such book - ' + args.book
+    elif args.modtime and not args.all and not args.changed and not args.book:
+      for bookFile in booksToPublish:
+        self._publish_book(bookFile)
     else:
       print 'Error: must specify exactly ONE of the options --all, --changed, or --book'
       
@@ -516,6 +523,7 @@ publish_parser.add_argument('--nogen', help='Do not generate books, just publish
 publish_parser.add_argument('-a', '--all', help='Publish all books', action='store_true')
 publish_parser.add_argument('-c', '--changed', help='Publish only changed books, as determined by comparing with stored checksums', action='store_true')
 publish_parser.add_argument('-b', '--book', help='Specify a book to publish, as a pathname relative to the top directory of this project')
+publish_parser.add_argument('-m', '--modtime', help='Publish any books modified after the specified time')
 publish_parser.set_defaults(func=tasks.publish)
 
 # Create the sub-parser for the 'checksum' command
