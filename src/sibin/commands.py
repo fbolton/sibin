@@ -286,7 +286,7 @@ class BasicTasks:
         booksToBuild = self._generate_publican(0)
     else:
       # If 'nogen', assume that all of the books have already been generated
-      booksToBuild = self.context.bookFiles
+      booksToBuild = set(self.context.bookFiles)
     # Parse --format command-line argument
     formats = ['html', 'html-single']
     if args.formats:
