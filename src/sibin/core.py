@@ -184,7 +184,7 @@ class BookParser:
     root = self.doc.getroot()
     self._parse_for_linkdata(ld, root)
   
-  def _parse_for_linkdata(self,ld,el):
+  def _parse_for_linkdata(self,ld,el,pageId=''):
     # A consequence of this is that each xmlId can map to multiple topicIds.
     # In the topicId-to-xmlId map, however, only the topic element is recorded,
     # so that the topicId maps to a unique xmlId.
@@ -196,9 +196,22 @@ class BookParser:
     # print el.tag + '/@id = ' + xmlId
     title = extract_title(el)
     if xmlId:
-      ld.addLinkData(self.book,el.tag,xmlId,title)
+      if tagname=='chapter' or tagname=='appendix' or tagname=='part':
+        # Start a new page
+        pageId = xmlId
+      if tagname=='section' and (el.getprevious() is not None) and isinstance(el.getprevious().tag, type('')):
+        parentTag = el.getparent().tag.lower()
+        if parentTag.startswith('{'):
+          parentTag = parentTag[parentTag.find('}')+1:]
+        previousTag = el.getprevious().tag.lower()
+        if previousTag.startswith('{'):
+          previousTag = previousTag[previousTag.find('}')+1:]
+        if (parentTag=='chapter' or parentTag=='appendix') and previousTag=='section':
+          # Start a new page
+          pageId = xmlId
+      ld.addLinkData(self.book,tagname,xmlId,title,pageId)
     for child in el.iterchildren(tag=etree.Element):
-      self._parse_for_linkdata(ld, child)
+      self._parse_for_linkdata(ld, child, pageId)
 
 
 class LinkData:
@@ -209,8 +222,9 @@ class LinkData:
     self.XmlId2Target = {}
     return
   
-  def addLinkData(self, book, elementTag, xmlId='', title=''):
-    topicTuple = (book,elementTag,xmlId,title)
+  def addLinkData(self, book, elementTag, xmlId='', title='', pageId=''):
+    # pageId is the xml:id of the ancestor element that ultimately gets rendered as a HTML page
+    topicTuple = (book,elementTag,xmlId,title,pageId)
     if xmlId:
       if xmlId not in self.XmlId2Target:
         self.XmlId2Target[xmlId] = { book.id:topicTuple }
@@ -240,7 +254,11 @@ class LinkData:
         if targetdoc==targetptr:
           return '"' + bookTitle + '"'
         else:
-          return 'section "' + sectionTitle + '" in "' + bookTitle + '"'
+          thingName = 'section'
+          tagname = topicTuple[1]
+          if tagname in ['part', 'chapter', 'appendix', 'example', 'figure']:
+            thingName = tagname
+          return thingName + ' "' + sectionTitle + '" in "' + bookTitle + '"'
     return ''
 
   def olink2url(self,targetdoc,targetptr):
@@ -264,7 +282,16 @@ class LinkData:
         bookTitle = topicTuple[0].title.replace(' ','_')
         prodName  = self.context.productname.replace(' ','_')
         version   = self.context.productversion
-        return baseUrl + '/en-US/' + prodName + '/' + version + '/html/' + bookTitle + '/index.html'
+        pageId    = topicTuple[4]
+        if pageId:
+          if pageId==targetptr:
+            pageRef = pageId + '.html'
+          else:
+            pageRef = pageId + '.html#' + targetptr
+        else:
+          # Default to start of book
+          pageRef = 'index.html'
+        return baseUrl + '/en-US/' + prodName + '/' + version + '/html/' + bookTitle + '/' + pageRef
     return ''
   
   def __str__(self):
