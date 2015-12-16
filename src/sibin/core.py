@@ -44,6 +44,8 @@ class SibinContext:
     self.bookFiles = []
     # Publican sort_order of book - low numbers listed before high
     self.sortorder = {}
+    # Localized books
+    self.localizedbooks = []
     # A dictionary of publican properties (additional settings in publican.cfg)
     self.book2publicanprops = {}
     # XML elements that divide up the book
@@ -90,6 +92,8 @@ class SibinContext:
       self.bookFiles.append(book.get('file'))
       if book.get('sortorder'):
         self.sortorder[book.get('file')] = book.get('sortorder')
+      if book.get('localize'):
+        self.localizedbooks.append(book.get('file'))
       publicanprops = {}
       for publicanprop in book.iter('publicanprop'):
         propname  = publicanprop.get('name')

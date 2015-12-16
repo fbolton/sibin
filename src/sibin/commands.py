@@ -20,8 +20,8 @@ class BasicTasks:
     if not isinstance(context,sibin.core.SibinContext):
       raise Exception('BasicTasks must be initialized with a SibinContext argument')
     self.context = context
-    
-  def save_doc_to_xml_file(self,element,xmlfile,entityfile):
+  
+  def doc_to_xml_string(self,element,entityfile):
     tagname = element.tag
     # If necessary, strip off the preceding namespace (DocBook 5)
     if tagname.startswith('{'):
@@ -33,10 +33,12 @@ class BasicTasks:
     content += ']>\n'
     content += etree.tostring(element)
     content += '\n'
+    return content
+  
+  def save_doc_to_xml_file(self,element,xmlfile,entityfile):
     f = open(xmlfile, 'w')
-    f.write(content)
+    f.write(self.doc_to_xml_string(element, entityfile))
     f.close()
-    del content
     
   def restore_file_read(self):
     bookSet = set()
@@ -144,8 +146,7 @@ class BasicTasks:
       break
     self.save_doc_to_xml_file(root, xmlfile, bookfileroot + '.ent')
 
-  def gen_dirs(self,bookFile):
-    genbasedir = 'publican'
+  def gen_dirs(self,bookFile,genbasedir='publican'):
     # Make the directories for this publican book
     (bookRoot, ext) = os.path.splitext(os.path.basename(bookFile))
     genbookdir = os.path.join(genbasedir, bookRoot)
@@ -162,8 +163,11 @@ class BasicTasks:
     else:
       # By default, consider all modifications since the Unix epoch
       self._generate_publican(0)
+      
+  def localize(self,args):
+    self._generate_publican(0,localize=True)
     
-  def _generate_publican(self,specifiedmodtime):
+  def _generate_publican(self,specifiedmodtime,localize=False):
     # Populate topic link data
     for bookFile in self.context.bookFiles:
       bookParser = sibin.core.BookParser(sibin.core.Book(bookFile))
@@ -171,8 +175,13 @@ class BasicTasks:
       bookParser.appendLinkData(self.context.linkData)
       del bookParser
     booksGenerated = set()
+    # Get the list of books we want to generate
+    if (localize):
+      booksToGenerate = self.context.localizedbooks
+    else:
+      booksToGenerate = self.context.bookFiles
     # Start generating publican output
-    for bookFile in self.context.bookFiles:
+    for bookFile in booksToGenerate:
       bookParser = sibin.core.BookParser(sibin.core.Book(bookFile))
       bookParser.parse()
       # Need to compile a list of all the image files referenced by
@@ -206,7 +215,10 @@ class BasicTasks:
       if generateThisBook:
         print 'Generating: ' + bookFile
         # Get the directories for this publican book
-        (genbookdir, genlangdir, bookRoot) = self.gen_dirs(bookFile)
+        if (localize):
+          (genbookdir, genlangdir, bookRoot) = self.gen_dirs(bookFile,'i10n')
+        else:
+          (genbookdir, genlangdir, bookRoot) = self.gen_dirs(bookFile)
         # Create an image file map, used to locate image files
         imageFileMap = {}
         for imageFile in imageFileSet:
@@ -231,7 +243,12 @@ class BasicTasks:
         parserForEntities = etree.XMLParser(resolve_entities=False)
         doc = etree.parse(bookFile,parserForEntities)
         doc.xinclude()
-        transformedBook = self.context.transformer.dcbk2publican(doc.getroot(), bookFile, bookParser.book.id)
+        root = doc.getroot()
+        if (localize):
+          # Reparse document in order to resolve entities
+          # Note: need to do it this way in order to resolve entities correctly
+          root = etree.fromstring(self.doc_to_xml_string(doc.getroot(),'Library.ent'))
+        transformedBook = self.context.transformer.dcbk2publican(root, bookFile, bookParser.book.id)
         publicanBookRoot = bookParser.book.title.replace(' ','_')
         # Write the main publican book file
         genbookfile = os.path.join(genlangdir, publicanBookRoot + '.xml')
@@ -525,6 +542,10 @@ publish_parser.add_argument('-c', '--changed', help='Publish only changed books,
 publish_parser.add_argument('-b', '--book', help='Specify a book to publish, as a pathname relative to the top directory of this project')
 publish_parser.add_argument('-m', '--modtime', help='Publish any books modified after the specified time')
 publish_parser.set_defaults(func=tasks.publish)
+
+# Create the sub-parser for the 'localize' command
+localize_parser = subparsers.add_parser('localize', help='Localize Publican books')
+localize_parser.set_defaults(func=tasks.localize)
 
 # Create the sub-parser for the 'checksum' command
 checksum_parser = subparsers.add_parser('checksum', help='Calculate the current checksum for every book in the library')
