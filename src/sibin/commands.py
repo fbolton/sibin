@@ -153,7 +153,16 @@ class BasicTasks:
     genlangdir = os.path.join(genbookdir, 'en-US')
     if not os.path.exists(genlangdir):
       os.makedirs(genlangdir)
-    return (genbookdir, genlangdir, bookRoot)
+    return (genbookdir, genlangdir)
+
+  def gen_l10n_dirs(self,bookFile):
+    # Make the localization directories for this publican book
+    bookDir = os.path.dirname(bookFile)
+    genbookdir = os.path.join(bookDir, 'publican')
+    genlangdir = os.path.join(genbookdir, 'en-US')
+    if not os.path.exists(genlangdir):
+      os.makedirs(genlangdir)
+    return (genbookdir, genlangdir)
 
   def generate_publican(self,args):
     if args.modtime:
@@ -216,9 +225,9 @@ class BasicTasks:
         print 'Generating: ' + bookFile
         # Get the directories for this publican book
         if (localize):
-          (genbookdir, genlangdir, bookRoot) = self.gen_dirs(bookFile,'i10n')
+          (genbookdir, genlangdir) = self.gen_l10n_dirs(bookFile)
         else:
-          (genbookdir, genlangdir, bookRoot) = self.gen_dirs(bookFile)
+          (genbookdir, genlangdir) = self.gen_dirs(bookFile)
         # Create an image file map, used to locate image files
         imageFileMap = {}
         for imageFile in imageFileSet:
@@ -260,7 +269,6 @@ class BasicTasks:
         genpublicancfg = os.path.join(genbookdir, 'publican.cfg')
         shutil.copyfile(os.path.join(templatedir,'publican.cfg'), genpublicancfg)
         with open(genpublicancfg, 'a') as filehandle:
-          # filehandle.write('docname: ' + bookRoot + '\n')
           conditions = self.context.getconditions()
           if conditions:
             filehandle.write('condition: ' + conditions + '\n')
@@ -404,7 +412,7 @@ class BasicTasks:
     bookParser = sibin.core.BookParser(sibin.core.Book(bookFile))
     bookParser.parse()
     # Get the directories for this publican book
-    (genbookdir, genlangdir, bookRoot) = self.gen_dirs(bookFile)
+    (genbookdir, genlangdir) = self.gen_dirs(bookFile)
     # rhpkg publican-build --lang en-US --message "commit message"
     cwd = os.getcwd()
     os.chdir(genbookdir)
@@ -480,7 +488,7 @@ class BasicTasks:
       bookParser = sibin.core.BookParser(sibin.core.Book(bookFile))
       bookParser.parse()
       # Get the directories for this publican book
-      (genbookdir, genlangdir, bookRoot) = self.gen_dirs(bookFile)
+      (genbookdir, genlangdir) = self.gen_dirs(bookFile)
       # Define the directories to copy from
       fromhtmldir = os.path.join(genbookdir,'tmp','en-US','html')
       fromhtmlsingledir = os.path.join(genbookdir,'tmp','en-US','html-single')
