@@ -119,12 +119,6 @@ class SibinContext:
       if template is not None:
         self.templates[profilename] = template.get('dir')
     del doc
-    if 'default' in self.profiles:
-      self.currentProfile = 'default'
-    else:
-      self.currentProfile = self.profiles[0]
-    # TODO Should change this into a log statement
-    print 'Current profile set to: ' + self.currentProfile
   
   def gethostname(self):
     return self.hostnames[self.currentProfile]

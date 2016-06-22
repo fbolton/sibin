@@ -65,6 +65,19 @@ class BasicTasks:
       print 'WARNING: No Kerberos ticket detected. Please run kinit'
       sys.exit()
       
+  def set_current_profile(self, new_profile=''):
+    if new_profile:
+      if new_profile in self.context.profiles:
+        self.context.currentProfile = new_profile
+      else:
+        print 'Error: No such profile as ' + new_profile
+        sys.exit()
+    elif 'default' in self.context.profiles:
+      self.context.currentProfile = 'default'
+    else:
+      self.context.currentProfile = self.context.profiles[0]
+    print 'Current profile set to: ' + self.context.currentProfile
+      
   def get_checksum(self,filename):
     parserForEntities = etree.XMLParser(resolve_entities=False)
     doc = etree.parse(filename,parserForEntities)
@@ -146,7 +159,9 @@ class BasicTasks:
       break
     self.save_doc_to_xml_file(root, xmlfile, bookfileroot + '.ent')
 
-  def gen_dirs(self,bookFile,genbasedir='publican'):
+  def gen_dirs(self,bookFile):
+    # Use the current profile name as the base directory name
+    genbasedir = self.context.currentProfile
     # Make the directories for this publican book
     (bookRoot, ext) = os.path.splitext(os.path.basename(bookFile))
     genbookdir = os.path.join(genbasedir, bookRoot)
@@ -165,6 +180,7 @@ class BasicTasks:
     return (genbookdir, genlangdir)
 
   def generate_publican(self,args):
+    self.set_current_profile(args.profile)
     if args.modtime:
       self._generate_publican(int(args.modtime))
     elif (args.sincelastcommit):
@@ -174,6 +190,7 @@ class BasicTasks:
       self._generate_publican(0)
       
   def localize(self,args):
+    self.set_current_profile(args.profile)
     self._generate_publican(0,localize=True)
     
   def _generate_publican(self,specifiedmodtime,localize=False):
@@ -300,6 +317,7 @@ class BasicTasks:
     return booksGenerated
       
   def build_publican(self,args):
+    self.set_current_profile(args.profile)
     # First phase, generate the publican books
     if not args.nogen:
       if args.modtime:
@@ -354,6 +372,7 @@ class BasicTasks:
 
   def publish(self,args):
     self.check_kerberos_ticket()
+    self.set_current_profile(args.profile)
     if not args.nogen:
       # First phase, generate publican books
       if args.modtime:
@@ -480,6 +499,7 @@ class BasicTasks:
       print bookFile + '\t' + checksum
   
   def zip(self,args):
+    self.set_current_profile(args.profile)
     print 'Creating a zip file:'
     zipbasedir = 'zip'
     shutil.rmtree(zipbasedir)
@@ -504,10 +524,10 @@ class BasicTasks:
   
   def clean(self,args):
     print 'Cleaning sibin files'
-    genbasedir = 'publican'
-    if os.path.exists(genbasedir):
-      shutil.rmtree(genbasedir)
-    self.restore_file_delete()
+    for genbasedir in self.context.profiles:
+      if os.path.exists(genbasedir):
+        shutil.rmtree(genbasedir)
+      self.restore_file_delete()
 
 
 
@@ -532,6 +552,7 @@ subparsers = parser.add_subparsers()
 gen_parser = subparsers.add_parser('gen', help='Generate Publican books')
 gen_parser.add_argument('-m', '--modtime', help='Generate any books modified after the specified time')
 gen_parser.add_argument('-s', '--sincelastcommit', help='Generate any books modified since the last commit', action='store_true')
+gen_parser.add_argument('-p', '--profile', help='Specify the build profile')
 gen_parser.set_defaults(func=tasks.generate_publican)
 
 # Create the sub-parser for the 'build' command
@@ -540,6 +561,7 @@ build_parser.add_argument('--nogen', help='Do not generate books, just build', a
 build_parser.add_argument('--formats', help='Specify output formats, as a comma-separated list')
 build_parser.add_argument('-m', '--modtime', help='Build any books modified after the specified time')
 build_parser.add_argument('-s', '--sincelastcommit', help='Build any books modified since the last commit', action='store_true')
+build_parser.add_argument('-p', '--profile', help='Specify the build profile')
 build_parser.set_defaults(func=tasks.build_publican)
 
 # Create the sub-parser for the 'publish' command
@@ -549,10 +571,12 @@ publish_parser.add_argument('-a', '--all', help='Publish all books', action='sto
 publish_parser.add_argument('-c', '--changed', help='Publish only changed books, as determined by comparing with stored checksums', action='store_true')
 publish_parser.add_argument('-b', '--book', help='Specify a book to publish, as a pathname relative to the top directory of this project')
 publish_parser.add_argument('-m', '--modtime', help='Publish any books modified after the specified time')
+publish_parser.add_argument('-p', '--profile', help='Specify the build profile')
 publish_parser.set_defaults(func=tasks.publish)
 
 # Create the sub-parser for the 'localize' command
 localize_parser = subparsers.add_parser('localize', help='Localize Publican books')
+localize_parser.add_argument('-p', '--profile', help='Specify the build profile')
 localize_parser.set_defaults(func=tasks.localize)
 
 # Create the sub-parser for the 'checksum' command
@@ -567,6 +591,7 @@ clean_parser.set_defaults(func=tasks.clean)
 
 # Create the sub-parser for the 'zip' command
 zip_parser = subparsers.add_parser('zip', help='Create a Zip file of all the books that have just been built locally')
+zip_parser.add_argument('-p', '--profile', help='Specify the build profile')
 zip_parser.set_defaults(func=tasks.zip)
 
 # Now, parse the args and call the relevant sub-command
