@@ -275,23 +275,44 @@ class LinkData:
         # inside a condition that will NOT be included in the book.
         return ''
       topicTuple = bookId2Tuple[targetdoc]
-      if topicTuple:
-        baseUrl = self.context.gethostname()
-        bookTitle = topicTuple[0].title.replace(' ','_')
-        prodName  = self.context.productname.replace(' ','_')
-        version   = self.context.productversion
-        pageId    = topicTuple[4]
-        if pageId:
-          if pageId==targetptr:
-            pageRef = pageId + '.html'
-          else:
-            pageRef = pageId + '.html#' + targetptr
-        else:
-          # Default to start of book
-          pageRef = 'index.html'
-        return baseUrl + '/en-US/' + prodName + '/' + version + '/html/' + bookTitle + '/' + pageRef
+      if self.context.currentProfile.lower() == 'pantheon':
+        return self._olink2url_pantheon(targetdoc, targetptr, topicTuple)
+      else:
+        return self._olink2url_publican(targetdoc, targetptr, topicTuple)
     return ''
-  
+
+  def _olink2url_publican(self,targetdoc,targetptr,topicTuple):
+    if topicTuple:
+      baseUrl = self.context.gethostname()
+      bookTitle = topicTuple[0].title.replace(' ','_')
+      prodName  = self.context.productname.replace(' ','_')
+      version   = self.context.productversion
+      pageId    = topicTuple[4]
+      if pageId:
+        if pageId==targetptr:
+          pageRef = pageId + '.html'
+        else:
+          pageRef = pageId + '.html#' + targetptr
+      else:
+        # Default to start of book
+        pageRef = 'index.html'
+      return baseUrl + '/en-US/' + prodName + '/' + version + '/html/' + bookTitle + '/' + pageRef
+    else:
+      return ''
+
+  def _olink2url_pantheon(self,targetdoc,targetptr,topicTuple):
+    if topicTuple:
+      baseUrl = self.context.gethostname()
+      bookTitle = topicTuple[0].title.lower().replace(' ','-')
+      prodName  = self.context.productname.lower().replace(' ','-')
+      version   = self.context.productversion
+      resultUrl = baseUrl + '/en/' + prodName + '/version-' + version + '/' + bookTitle
+      if targetdoc != targetptr:
+        resultUrl += '/#' + targetptr
+      return resultUrl
+    else:
+      return ''
+
   def __str__(self):
     print 'XmlId2Target = {'
     for xmlId in self.XmlId2Target.keys():
