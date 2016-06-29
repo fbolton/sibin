@@ -306,7 +306,7 @@ class LinkData:
       bookTitle = topicTuple[0].title.lower().replace(' ','-')
       prodName  = self.context.productname.lower().replace(' ','-')
       version   = self.context.productversion
-      resultUrl = baseUrl + '/en/' + prodName + '/version-' + version + '/' + bookTitle
+      resultUrl = baseUrl + '/en/' + prodName + '/' + version + '/' + bookTitle
       if targetdoc != targetptr:
         resultUrl += '/#' + targetptr
       return resultUrl
