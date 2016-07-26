@@ -301,12 +301,13 @@ class LinkData:
       return ''
 
   def _olink2url_pantheon(self,targetdoc,targetptr,topicTuple):
+    # Convert olink to Pantheon's single HTML URL format
     if topicTuple:
       baseUrl = self.context.gethostname()
       bookTitle = topicTuple[0].title.lower().replace(' ','-')
       prodName  = self.context.productname.lower().replace(' ','-')
       version   = self.context.productversion
-      resultUrl = baseUrl + '/en/' + prodName + '/' + version + '/' + bookTitle
+      resultUrl = baseUrl + '/en/' + prodName + '/' + version + '/single/' + bookTitle
       if targetdoc != targetptr:
         resultUrl += '/#' + targetptr
       return resultUrl
