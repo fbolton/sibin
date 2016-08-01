@@ -524,10 +524,11 @@ class BasicTasks:
   
   def clean(self,args):
     print 'Cleaning sibin files'
-    for genbasedir in self.context.profiles:
-      if os.path.exists(genbasedir):
-        shutil.rmtree(genbasedir)
-      self.restore_file_delete()
+    # Clean only the files from the _first_ profile
+    genbasedir = self.context.profiles[0]
+    if os.path.exists(genbasedir):
+      shutil.rmtree(genbasedir)
+    self.restore_file_delete()
 
 
 
