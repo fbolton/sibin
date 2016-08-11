@@ -309,7 +309,7 @@ class LinkData:
       version   = self.context.productversion
       resultUrl = baseUrl + '/en/' + prodName + '/' + version + '/single/' + bookTitle
       if targetdoc != targetptr:
-        resultUrl += '/#' + targetptr
+        resultUrl += '#' + targetptr
       return resultUrl
     else:
       return ''
