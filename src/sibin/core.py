@@ -275,10 +275,8 @@ class LinkData:
         # inside a condition that will NOT be included in the book.
         return ''
       topicTuple = bookId2Tuple[targetdoc]
-      if self.context.currentProfile.lower() == 'pantheon':
-        return self._olink2url_pantheon(targetdoc, targetptr, topicTuple)
-      else:
-        return self._olink2url_publican(targetdoc, targetptr, topicTuple)
+      # Brew and Pantheon are now unified to use 'publican' style URLs
+      return self._olink2url_publican(targetdoc, targetptr, topicTuple)
     return ''
 
   def _olink2url_publican(self,targetdoc,targetptr,topicTuple):
@@ -295,11 +293,12 @@ class LinkData:
           pageRef = pageId + '.html#' + targetptr
       else:
         # Default to start of book
-        pageRef = 'index.html'
+        pageRef = ''
       return baseUrl + '/en-US/' + prodName + '/' + version + '/html/' + bookTitle + '/' + pageRef
     else:
       return ''
 
+  # OBSELETE - Since Docs 2.0, URLs reverted to legacy Publican format
   def _olink2url_pantheon(self,targetdoc,targetptr,topicTuple):
     # Convert olink to Pantheon's single HTML URL format
     if topicTuple:
@@ -323,5 +322,3 @@ class LinkData:
         print '    ' , entries[bookId]
       print '  }'
     print '}'
-
-
