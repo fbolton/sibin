@@ -348,7 +348,7 @@ class BasicTasks:
     if previouslyBuiltBooks:
       print 'WARNING: Restoring after aborted build. Will only build the books not built last time around.'
     # Start building publican books
-    genbasedir = 'publican'
+    genbasedir = self.context.currentProfile
     langs = 'en-US'
     isBuildSuccess = True
     booksToBuild = booksToBuild - previouslyBuiltBooks
