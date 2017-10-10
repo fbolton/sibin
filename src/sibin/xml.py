@@ -234,10 +234,16 @@ class XMLTransformer:
           el.insert(childindex, newchild)
         # Publican requires leading whitespace to lie *outside* the inline element
         (leadspaces, restofline) = self.splitleadingspaces(lastline)
-        if child.getprevious().tail is not None:
-          child.getprevious().tail += leadspaces
+        if child.getprevious() is not None:
+          if child.getprevious().tail is not None:
+            child.getprevious().tail += leadspaces
+          else:
+            child.getprevious().tail = leadspaces
         else:
-          child.getprevious().tail = leadspaces
+          if el.text is not None:
+            el.text += leadspaces
+          else:
+            el.text = leadspaces
         child.text = restofline
 
   def splitleadingspaces(self,text):
