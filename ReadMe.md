@@ -11,6 +11,10 @@ You need the following prerequisites to run Sibin:
         sudo yum install python-lxml
 
     **Note:** `lxml` depends on the C libraries, `libxml2` and `libxslt` (usually installed on most UNIX/LINUX systems).
+    
+    **Note:** Versions 4.x of `lxml` appear to have a bug whereby the `resolve_entities=False` parser setting is not working properly. If necessary, revert to the 3.8.0 version using the following `pip` command:
+
+        sudo pip install "lxml==3.8.0" --force-reinstall
 
 * ImageMagick. Install it by entering:
 
@@ -111,4 +115,3 @@ For more information, you can access the built-in command help by entering:
 Or for help on a specific sub-command, enter:
 
     sibin <sub-command> --help
-
