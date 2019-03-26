@@ -2,7 +2,25 @@
 
 ## Prerequisites
 
-You need the following prerequisites to run Sibin:
+You need the following prerequisites to run Sibin on Linux:
+
+_Note: Sibin is not supported on Mac OS._
+
+**Red Hat Enterprise Linux Corporate Standard Build (CSB)**
+
+1. From your Lenovo desktop, select **Applications> System Tools> Software**.
+
+2. Search for and install these packages:
+
+    * python-2.7.x
+    
+    * python-lmxl
+
+    * ImageMagick (two packages)
+
+    * Common documentation files for Redhat-pantheon-db5 package
+
+**Fedora or other non-CSB Linux**
 
 * Python 2.7.  **NB:** Do not attempt to use Python 3, which has a different syntax.
 
@@ -33,7 +51,7 @@ You need the following prerequisites to run Sibin:
 
 Perform the following steps:
 
-1. Unzip the distribution (or just copy the files to a convenient location, if you got the distribution by doing a `git clone`).
+1. Unzip the Sibin distribution (or just copy the files to a convenient location, if you got the distribution by doing a `git clone`).
 
 1. Add the `bin/sibin` script to your path. For example, from the project directory, you could enter:
 
