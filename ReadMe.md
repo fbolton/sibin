@@ -32,7 +32,7 @@ _Note: Sibin is not supported on Mac OS._
     
     **Note:** Versions 4.x of `lxml` appear to have a bug whereby the `resolve_entities=False` parser setting is not working properly. If necessary, revert to the 3.8.0 version using the following `pip` command:
 
-        sudo pip install "lxml==3.8.0" --force-reinstall
+        sudo pip2.7 install "lxml==3.8.0" --force-reinstall
 
 * ImageMagick. Install it by entering:
 
